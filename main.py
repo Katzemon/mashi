@@ -1,16 +1,36 @@
-# This is a sample Python script.
+import asyncio
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import uvicorn
 
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+from data.db import db
+from server.http_server import http_app
+from server.server import app
 
 
-# Press the green button in the gutter to run the script.
+def start_uvicorn():
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=443,
+        log_level="info",
+        ssl_keyfile="/etc/letsencrypt/live/katzemon.com/privkey.pem",
+        ssl_certfile="/etc/letsencrypt/live/katzemon.com/fullchain.pem",
+        access_log=True
+    )
+
+
+def start_uvicorn_80():
+    uvicorn.run(http_app, host="0.0.0.0", port=80)
+
+
+async def main():
+    db.init()
+
+    server_task = asyncio.to_thread(start_uvicorn)
+    http_server_task = asyncio.to_thread(start_uvicorn_80)
+
+    await asyncio.gather(server_task, http_server_task)
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    asyncio.run(main())
