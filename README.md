@@ -1,3 +1,5 @@
+### requirements:
+Linux
 ### .env example:
 ```
 #db
