@@ -30,9 +30,9 @@ def get_notify_embed(data: dict) -> discord.Embed:
 
     details = (
         f"""Artist: {artist_name}
-        Price: {price} USDC
-        Max Supply: {max_supply}
-        Max Per-Wallet: {max_per_wallet}"""
+Price: {price} USDC
+Max Supply: {max_supply}
+Max Per-Wallet: {max_per_wallet}"""
     )
     embed.add_field(name="Details", value=details, inline=False)
 
@@ -42,8 +42,7 @@ def get_notify_embed(data: dict) -> discord.Embed:
     embed.add_field(name="Assets:", value=assets_links, inline=False)
 
     # composite and footer
-    composite_url = assets.get("composite")
-    composite_url = composite_url.replace("ipfs://", "https://ipfs.io/ipfs/")
+    composite_url = assets.get("composite").replace("ipfs://", "https://ipfs.io/ipfs/")
     embed.set_image(url=composite_url)
     embed.set_footer(text="Mashi")
     return embed
