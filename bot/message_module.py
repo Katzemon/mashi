@@ -43,6 +43,7 @@ def get_notify_embed(data: dict) -> discord.Embed:
 
     # composite and footer
     composite_url = assets.get("composite")
+    composite_url = composite_url.replace("ipfs://", "https://ipfs.io/ipfs/")
     embed.set_image(url=composite_url)
     embed.set_footer(text="Mashi")
     return embed

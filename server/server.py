@@ -14,7 +14,7 @@ async def startup():
     asyncio.create_task(bot.start(DISCORD_TOKEN))
 
 
-@app.post(f"{NOTIFY_API_ROUTE}")
+@app.post(NOTIFY_API_ROUTE)
 async def release_notify(request: Request, response: Response):
     try:
         data = await request.json()
