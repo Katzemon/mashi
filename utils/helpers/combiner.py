@@ -3,6 +3,8 @@
 import cairosvg
 from PIL import Image
 
+from utils.helpers.apng_helper import get_frames_as_bytes, get_traits_info
+from utils.helpers.math_helper import lcm_of_list
 from utils.helpers.svg_helper import remove_redundant_info
 
 resample_mode = Image.Resampling.LANCZOS
@@ -61,3 +63,80 @@ def get_combined_img_bytes(
     output_bytes = io.BytesIO()
     base.save(output_bytes, format="PNG")
     return output_bytes.getvalue()
+
+
+def generate_frames(sorted_traits, traits_info, total_t_lcm):
+    imgs_frames = []
+    for index, trait_info in enumerate(traits_info):
+        if trait_info.is_animated:
+            img_frames = get_frames_as_bytes(sorted_traits[index])
+        else:
+            img_frames = [sorted_traits[index]]
+
+        # extend with frames
+        if trait_info.frame_t > 0.1:
+            repeat_count = round(trait_info.frame_t / 0.1)
+            img_frames = [item for item in img_frames for _ in range(repeat_count)]
+
+        # extend duration
+        if total_t_lcm > trait_info.total_t:
+            repeat_factor = round(total_t_lcm / trait_info.total_t)
+            img_frames = img_frames * repeat_factor
+
+        imgs_frames.append(img_frames)
+
+    return imgs_frames
+
+
+def get_combined_webp(
+        sorted_traits: list,
+        bg_size=(552, 736),
+        overlay_size=(380, 600),
+        is_minted=False,
+        type: int = 0
+):
+    if not sorted_traits:
+        raise ValueError("No traits found")
+
+    traits_info, total_ts = get_traits_info(sorted_traits)
+    total_t_lcm = lcm_of_list(total_ts)
+    imgs_frames = generate_frames(sorted_traits, traits_info, total_t_lcm)
+
+    imgs = []
+    for sorted_traits in zip(*imgs_frames):
+        sorted_traits = list(sorted_traits)  # convert tuple to list
+        frame_bytes = get_combined_img_bytes(
+            sorted_traits,
+            bg_size=bg_size,
+            overlay_size=overlay_size
+        )
+        imgs.append(frame_bytes)
+
+    # Convert PNG bytes to PIL Images
+    animated_bytes = io.BytesIO()
+    if type == 0:
+        gif_frames = [Image.open(io.BytesIO(png)) for png in imgs]
+        gif_frames[0].save(
+            animated_bytes,
+            format='GIF',
+            save_all=True,
+            append_images=gif_frames[1:],
+            duration=100,  # duration of each frame in milliseconds
+            loop=0,  # 0 = infinite loop
+            disposal=0  # makes frames replace previous ones
+        )
+    else:
+        webp_frames = [Image.open(io.BytesIO(png)).convert("RGBA") for png in imgs]  # keep RGBA for transparency
+        webp_frames[0].save(
+            animated_bytes,
+            format='WEBP',
+            save_all=True,
+            append_images=webp_frames[1:],
+            duration=100,  # duration per frame in ms
+            loop=0,  # 0 = infinite loop
+            method=6,  # higher quality compression
+            lossless=True  # preserve exact colors
+        )
+
+    webp_bytes = animated_bytes.getvalue()
+    return webp_bytes

@@ -5,9 +5,8 @@ from data.models.mashup_error import MashupError
 from data.remote.alchemy_api import AlchemyApi
 from data.remote.images_api import ImagesApi
 from data.remote.mashi_api import MashiApi
-from utils.helpers.combiner import get_combined_img_bytes
+from utils.helpers.combiner import get_combined_img_bytes, get_combined_webp
 from utils.helpers.generator import generate_minted_svg
-from utils.helpers.webp_combiner import get_combined_webp
 from utils.helpers.svg_helper import replace_colors
 
 layer_order = [
@@ -38,13 +37,11 @@ class MashiRepo:
             cls._instance = MashiRepo(_mashers_dao, _mashi_api, _alchemy_api, _images_api)
         return cls._instance
 
-
     def __init__(self, mashers_dao: MashersDao, mashi_api: MashiApi, alchemy_api: AlchemyApi, images_api: ImagesApi):
         self._mashers_dao = mashers_dao
         self._mashi_api = mashi_api
         self._alchemy_api = alchemy_api
         self._images_api = images_api
-
 
     def _get_asset(self, asset, colors):
         try:
@@ -67,7 +64,6 @@ class MashiRepo:
             print(e)
             return None
 
-
     def _check_mint_ownership(self, wallet: str, assets: list, mint: int) -> str | MashupError:
         background_uri = next(
             (item["image"] for item in assets if item["name"] == "background"),
@@ -86,8 +82,8 @@ class MashiRepo:
 
         return nft_name
 
-
-    async def get_composite(self, wallet: str, mint: int | None = None, is_animated: bool = False, type: int = 0) -> str | MashupError:
+    async def get_composite(self, wallet: str, mint: int | None = None, is_animated: bool = False,
+                            type: int = 0) -> str | MashupError:
         mashup = None
         try:
             mashup = self._mashi_api.get_mashi_data(wallet)

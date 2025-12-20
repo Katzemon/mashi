@@ -132,50 +132,29 @@ class MashiModule(commands.Cog):
     ])
     async def animated_mashi(self, interaction: discord.Interaction, type: int = 0):
         try:
-            # 1. Defer immediately to prevent interaction timeout
             await interaction.response.defer(ephemeral=False)
 
             id = interaction.user.id
             wallet = self._mashers_dao.get_wallet(id)
             if wallet:
-                # 2. Get data from your repository
-                # Ensure your helper returns the BytesIO object with seek(0) already called
                 data = await self._mashi_repo.get_composite(wallet, is_animated=True, type=type)
-
                 if data:
-                    # Check if it's an error object or raw bytes/BytesIO
                     if not isinstance(data, (bytes, io.BytesIO)):
                         msg = getattr(data, 'error_msg', "Unknown error")
                         await interaction.followup.send(msg, ephemeral=True)
                         return
 
-                    # 3. Handle Bytes vs BytesIO
-                    if isinstance(data, bytes):
-                        buffer = io.BytesIO(data)
-                    else:
-                        buffer = data
-
-                    # Ensure the pointer is at the start for Discord to read
+                    buffer = io.BytesIO(data)
                     buffer.seek(0)
 
-                    # 4. Create Discord File
-                    # Using .gif extension tells Discord to use its animated renderer
-                    if type == 0:
-                        file = discord.File(fp=buffer, filename="mashi_composite.gif")
-                    else:
-                        file = discord.File(fp=buffer, filename="mashi_composite.webp")
-
-
+                    file_ext = "gif" if type == 0 else "webp"
+                    file = discord.File(fp=buffer, filename=f"mashi_composite.{file_ext}")
                     embed = discord.Embed(
                         title=f"{interaction.user.display_name}'s Mashi",
                         color=discord.Color.green()
                     )
-                    if type == 0:
-                        embed.set_image(url="attachment://mashi_composite.gif")
-                    else:
-                        embed.set_image(url="attachment://mashi_composite.webp")
+                    embed.set_image(url=f"attachment://mashi_composite.{file_ext}")
 
-                    # 5. Send the followup
                     await interaction.followup.send(embed=embed, file=file)
                     return
 
