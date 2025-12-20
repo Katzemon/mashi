@@ -1,5 +1,6 @@
 import io
 from io import BytesIO
+from numbers import Number
 
 import discord
 from discord import app_commands
@@ -125,7 +126,11 @@ class MashiModule(commands.Cog):
             )
 
     @app_commands.command(name="animated_mashi", description="Get animated mashup")
-    async def animated_mashi(self, interaction: discord.Interaction, mint: int | None = None):
+    @app_commands.choices(type=[
+        app_commands.Choice(name="GIF", value=0),
+        app_commands.Choice(name="WEBP", value=1),
+    ])
+    async def animated_mashi(self, interaction: discord.Interaction, type: int = 0):
         try:
             # 1. Defer immediately to prevent interaction timeout
             await interaction.response.defer(ephemeral=False)
@@ -135,7 +140,7 @@ class MashiModule(commands.Cog):
             if wallet:
                 # 2. Get data from your repository
                 # Ensure your helper returns the BytesIO object with seek(0) already called
-                data = await self._mashi_repo.get_composite(wallet, mint, is_animated=True)
+                data = await self._mashi_repo.get_composite(wallet, is_animated=True, type=type)
 
                 if data:
                     # Check if it's an error object or raw bytes/BytesIO
@@ -155,13 +160,20 @@ class MashiModule(commands.Cog):
 
                     # 4. Create Discord File
                     # Using .gif extension tells Discord to use its animated renderer
-                    file = discord.File(fp=buffer, filename="mashi_composite.webp")
+                    if type == 0:
+                        file = discord.File(fp=buffer, filename="mashi_composite.gif")
+                    else:
+                        file = discord.File(fp=buffer, filename="mashi_composite.webp")
+
 
                     embed = discord.Embed(
                         title=f"{interaction.user.display_name}'s Mashi",
                         color=discord.Color.green()
                     )
-                    embed.set_image(url="attachment://mashi_composite.webp")
+                    if type == 0:
+                        embed.set_image(url="attachment://mashi_composite.gif")
+                    else:
+                        embed.set_image(url="attachment://mashi_composite.webp")
 
                     # 5. Send the followup
                     await interaction.followup.send(embed=embed, file=file)

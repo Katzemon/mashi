@@ -87,7 +87,7 @@ class MashiRepo:
         return nft_name
 
 
-    async def get_composite(self, wallet: str, mint: int | None = None, is_animated: bool = False) -> str | MashupError:
+    async def get_composite(self, wallet: str, mint: int | None = None, is_animated: bool = False, type: int = 0) -> str | MashupError:
         mashup = None
         try:
             mashup = self._mashi_api.get_mashi_data(wallet)
@@ -125,6 +125,7 @@ class MashiRepo:
                 png_bytes = get_combined_webp(
                     ordered_traits,
                     is_minted=bool(mint),
+                    type=type
                 )
             else:
                 png_bytes = get_combined_img_bytes(

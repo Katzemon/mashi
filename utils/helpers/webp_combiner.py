@@ -29,7 +29,8 @@ def get_combined_webp(
         sorted_traits: list,
         bg_size=(552, 736),
         overlay_size=(380, 600),
-        is_minted=False
+        is_minted=False,
+        type: int = 0
 ):
     if not sorted_traits:
         raise ValueError("No traits found")
@@ -121,19 +122,30 @@ def get_combined_webp(
         imgs.append(output_bytes.getvalue())
 
     # Convert PNG bytes to PIL Images
-    webp_frames = [Image.open(io.BytesIO(png)).convert("RGBA") for png in imgs]  # keep RGBA for transparency
+    animated_bytes = io.BytesIO()
+    if type == 0:
+        gif_frames = [Image.open(io.BytesIO(png)) for png in imgs]
+        gif_frames[0].save(
+            animated_bytes,
+            format='GIF',
+            save_all=True,
+            append_images=gif_frames[1:],
+            duration=100,  # duration of each frame in milliseconds
+            loop=0,  # 0 = infinite loop
+            disposal=0  # makes frames replace previous ones
+        )
+    else:
+        webp_frames = [Image.open(io.BytesIO(png)).convert("RGBA") for png in imgs]  # keep RGBA for transparency
+        webp_frames[0].save(
+            animated_bytes,
+            format='WEBP',
+            save_all=True,
+            append_images=webp_frames[1:],
+            duration=100,  # duration per frame in ms
+            loop=0,  # 0 = infinite loop
+            method=6,  # higher quality compression
+            lossless=True  # preserve exact colors
+        )
 
-    output_webp_bytes = io.BytesIO()
-    webp_frames[0].save(
-        output_webp_bytes,
-        format='WEBP',
-        save_all=True,
-        append_images=webp_frames[1:],
-        duration=100,  # duration per frame in ms
-        loop=0,  # 0 = infinite loop
-        method=6,  # higher quality compression
-        lossless=True  # preserve exact colors
-    )
-
-    webp_bytes = output_webp_bytes.getvalue()
+    webp_bytes = animated_bytes.getvalue()
     return webp_bytes
