@@ -1,3 +1,4 @@
+import io
 from io import BytesIO
 
 import discord
@@ -123,6 +124,59 @@ class MashiModule(commands.Cog):
                 ephemeral=True
             )
 
+    @app_commands.command(name="test", description="Get test mashup")
+    async def test(self, interaction: discord.Interaction, mint: int | None = None):
+        try:
+            # 1. Defer immediately to prevent interaction timeout
+            await interaction.response.defer(ephemeral=False)
+
+            wallet = "0xd659688366e5a5a6190409dcd4834b3a5b7c88ba"
+
+            # 2. Get data from your repository
+            # Ensure your helper returns the BytesIO object with seek(0) already called
+            data = await self._mashi_repo.get_composite(wallet, mint, test=True)
+
+            if data:
+                # Check if it's an error object or raw bytes/BytesIO
+                if not isinstance(data, (bytes, io.BytesIO)):
+                    msg = getattr(data, 'error_msg', "Unknown error")
+                    await interaction.followup.send(msg, ephemeral=True)
+                    return
+
+                # 3. Handle Bytes vs BytesIO
+                if isinstance(data, bytes):
+                    buffer = io.BytesIO(data)
+                else:
+                    buffer = data
+
+                # Ensure the pointer is at the start for Discord to read
+                buffer.seek(0)
+
+                # 4. Create Discord File
+                # Using .gif extension tells Discord to use its animated renderer
+                file = discord.File(fp=buffer, filename="mashi_composite.gif")
+
+                embed = discord.Embed(
+                    title=f"{interaction.user.display_name}'s Mashi",
+                    color=discord.Color.green()
+                )
+                embed.set_image(url="attachment://mashi_composite.gif")
+
+                # 5. Send the followup
+                await interaction.followup.send(embed=embed, file=file)
+                return
+
+            await interaction.followup.send("No data found.", ephemeral=True)
+
+        except Exception as e:
+            # Log error to your test channel
+            error_channel = interaction.guild.get_channel(TEST_CHANNEL_ID)
+            if error_channel:
+                await error_channel.send(f"⚠️ **Command Error:** `{e}`")
+
+            # User-facing error message
+            if not interaction.has_resumed():  # Check if we can still send a response
+                await interaction.followup.send("Something went wrong while processing your image.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(MashiModule(bot))

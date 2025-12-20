@@ -1,4 +1,5 @@
 import asyncio
+from io import BytesIO
 
 from data.db.daos.mashers_dao import MashersDao
 from data.models.mashup_error import MashupError
@@ -7,6 +8,7 @@ from data.remote.images_api import ImagesApi
 from data.remote.mashi_api import MashiApi
 from utils.helpers.combiner import get_combined_img_bytes
 from utils.helpers.generator import generate_minted_svg
+from utils.helpers.gif_combiner import get_combined_img_bytes_v2
 from utils.helpers.svg_helper import replace_colors
 
 layer_order = [
@@ -86,7 +88,7 @@ class MashiRepo:
         return nft_name
 
 
-    async def get_composite(self, wallet: str, mint: int | None = None):
+    async def get_composite(self, wallet: str, mint: int | None = None, test: bool = False) -> str | MashupError:
         mashup = None
         try:
             mashup = self._mashi_api.get_mashi_data(wallet)
@@ -120,10 +122,14 @@ class MashiRepo:
             if mint:
                 ordered_traits.append(generate_minted_svg(nft_name))
 
-            png_bytes = get_combined_img_bytes(
-                ordered_traits,
-                is_minted=bool(mint),
-            )
+            if test:
+                png_bytes = get_combined_img_bytes_v2(ordered_traits)
+            else:
+                png_bytes = get_combined_img_bytes(
+                    ordered_traits,
+                    is_minted=bool(mint),
+                )
+
             if png_bytes:
                 return png_bytes
             else:
