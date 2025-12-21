@@ -1,6 +1,5 @@
 import io
 from io import BytesIO
-from numbers import Number
 
 import discord
 from discord import app_commands
@@ -94,7 +93,7 @@ class MashiModule(commands.Cog):
                         msg_data = data.data
 
                         if msg_data:
-                            channel = interaction.guild.get_channel(TEST_CHANNEL_ID)
+                            channel = await interaction.guild.fetch_channel(TEST_CHANNEL_ID)
                             await channel.send(data)
 
                         await interaction.followup.send(
@@ -118,7 +117,7 @@ class MashiModule(commands.Cog):
             )
 
         except Exception as e:
-            channel = interaction.guild.get_channel(TEST_CHANNEL_ID)
+            channel = await interaction.guild.fetch_channel(TEST_CHANNEL_ID)
             await channel.send(f"/mashi: {e}")
             await interaction.followup.send(
                 "Something went wrong",
@@ -164,7 +163,7 @@ class MashiModule(commands.Cog):
             )
 
         except Exception as e:
-            channel = interaction.guild.get_channel(TEST_CHANNEL_ID)
+            channel = await interaction.guild.fetch_channel(TEST_CHANNEL_ID)
             await channel.send(f"/mashi: {e}")
             await interaction.followup.send(
                 "Something went wrong",

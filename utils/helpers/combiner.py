@@ -18,7 +18,7 @@ def _is_svg(trait):
 
 def _svg_bytes_to_img(svg_bytes, target_size=None):
     svg_bytes = remove_redundant_info(svg_bytes)
-    png_bytes = cairosvg.svg2png(bytestring=svg_bytes)
+    png_bytes = cairosvg.svg2png(bytestring=svg_bytes.encode("utf-8"))
 
     img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
     if target_size:
