@@ -3,9 +3,11 @@
 import cairosvg
 from PIL import Image
 
-from utils.helpers.apng_helper import get_frames_as_bytes, get_traits_info
+from utils.helpers.apng_helper import get_apng_frames_as_bytes
+from utils.helpers.gif_helper import extract_first_frame, is_gif
 from utils.helpers.math_helper import lcm_of_list
 from utils.helpers.svg_helper import remove_redundant_info
+from utils.helpers.traits_helper import get_traits_info
 
 resample_mode = Image.Resampling.LANCZOS
 
@@ -39,6 +41,10 @@ def get_combined_img_bytes(
     base = Image.open(io.BytesIO(bg_trait)).convert("RGBA")
     base = base.resize(bg_size, resample=resample_mode)
 
+    for index,trait in enumerate(sorted_traits):
+        if _is_svg(trait):
+            sorted_traits[index] = extract_first_frame(trait)
+
     minted_trait = None
     if is_minted:
         minted_trait = sorted_traits.pop()
@@ -69,7 +75,7 @@ def generate_frames(sorted_traits, traits_info, total_t_lcm):
     imgs_frames = []
     for index, trait_info in enumerate(traits_info):
         if trait_info.is_animated:
-            img_frames = get_frames_as_bytes(sorted_traits[index])
+            img_frames = get_apng_frames_as_bytes(sorted_traits[index])
         else:
             img_frames = [sorted_traits[index]]
 
@@ -92,11 +98,14 @@ def get_combined_webp(
         sorted_traits: list,
         bg_size=(552, 736),
         overlay_size=(380, 600),
-        is_minted=False,
         type: int = 0
 ):
     if not sorted_traits:
         raise ValueError("No traits found")
+
+    for index, trait in enumerate(sorted_traits):
+        if is_gif(trait):
+            sorted_traits[index] = extract_first_frame(trait)
 
     traits_info, total_ts = get_traits_info(sorted_traits)
     total_t_lcm = lcm_of_list(total_ts)

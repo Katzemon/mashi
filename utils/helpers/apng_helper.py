@@ -4,8 +4,6 @@ from typing import Tuple
 from PIL import Image
 from apng import APNG
 
-from data.models.traits_info import TraitsInfo
-
 
 def check_if_apng(image_bytes):
     try:
@@ -35,38 +33,7 @@ def get_apng_info(image_bytes) -> Tuple[int, float]:
 
     return num_frames, total_duration
 
-def get_traits_info(sorted_traits):
-    traits_info = []
-    total_ts = []
-
-    for trait in sorted_traits:
-        is_apng = check_if_apng(trait)
-        if is_apng:
-            num_frames, total_duration = get_apng_info(trait)
-            traits_info.append(
-                TraitsInfo(
-                    frames=num_frames,
-                    frame_t=total_duration/num_frames,
-                    total_t=total_duration,
-                    is_animated=True
-                )
-            )
-            total_ts.append(total_duration)
-        else:
-            traits_info.append(
-                TraitsInfo(
-                    frames=1,
-                    frame_t=0.1,
-                    total_t=0.1,
-                    is_animated=False
-                )
-            )
-            total_ts.append(0.1)
-
-    return traits_info, total_ts
-
-
-def get_frames_as_bytes(data_bytes):
+def get_apng_frames_as_bytes(data_bytes):
     """
     Returns a list of PNG bytes for each frame of an APNG (or a static PNG),
     normalized to full canvas size (each frame is a full PNG image).
