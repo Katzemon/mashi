@@ -1,3 +1,4 @@
+import asyncio
 import io
 
 from PIL import Image
@@ -11,35 +12,70 @@ from utils.helpers.combiners.combiner import get_combined_img_bytes
 from utils.helpers.webp.webp_helper import get_webp_frames_as_bytes
 
 
-def generate_frames(sorted_traits, traits_info, total_t_lcm):
-    imgs_frames = []
-    for index, trait_info in enumerate(traits_info):
-        if trait_info.is_animated:
-            if is_apng(sorted_traits[index]):
-                img_frames = get_apng_frames_as_bytes(sorted_traits[index])
-            elif is_gif(sorted_traits[index]):
-                img_frames = get_gif_frames_as_bytes(sorted_traits[index])
-            else:
-                img_frames = get_webp_frames_as_bytes(sorted_traits[index])
-        else:
-            img_frames = [sorted_traits[index]]
+async def process_trait_frames(index, sorted_traits, trait_info, total_t_lcm):
+    trait = sorted_traits[index]
 
-        # extend with frames
-        if trait_info.frame_t > ANIM_STEP:
-            repeat_count = round(trait_info.frame_t / ANIM_STEP)
-            img_frames = [item for item in img_frames for _ in range(repeat_count)]
+    # Get frames (CPU-bound → offload to thread)
+    if trait_info.is_animated:
+        if is_apng(trait):
+            img_frames = await asyncio.to_thread(get_apng_frames_as_bytes, trait)
+        elif is_gif(trait):
+            img_frames = await asyncio.to_thread(get_gif_frames_as_bytes, trait)
+        else:  # webp
+            img_frames = await asyncio.to_thread(get_webp_frames_as_bytes, trait)
+    else:
+        img_frames = [trait]
 
-        # extend duration
-        if total_t_lcm > trait_info.total_t:
-            repeat_factor = round(total_t_lcm / trait_info.total_t)
-            img_frames = img_frames * repeat_factor
+    # extend with frame_t
+    if trait_info.frame_t > ANIM_STEP:
+        repeat_count = round(trait_info.frame_t / ANIM_STEP)
+        img_frames = [item for item in img_frames for _ in range(repeat_count)]
 
-        imgs_frames.append(img_frames)
+    # extend duration to total_t_lcm
+    if total_t_lcm > trait_info.total_t:
+        repeat_factor = round(total_t_lcm / trait_info.total_t)
+        img_frames = img_frames * repeat_factor
 
+    return img_frames
+
+async def generate_frames(sorted_traits, traits_info, total_t_lcm):
+    tasks = [
+        process_trait_frames(i, sorted_traits, traits_info[i], total_t_lcm)
+        for i in range(len(sorted_traits))
+    ]
+    imgs_frames = await asyncio.gather(*tasks)
     return imgs_frames
 
 
-def get_combined_anim(
+async def process_frame(i, num_layers, imgs_frames, bg_size, overlay_size, is_minted):
+    current_layers = [imgs_frames[j][i] for j in range(num_layers)]
+
+    # Run CPU-bound function in a separate thread
+    combined_png_bytes = await asyncio.to_thread(
+        get_combined_img_bytes,
+        current_layers,
+        bg_size=bg_size,
+        overlay_size=overlay_size,
+        is_minted=is_minted
+    )
+
+    # Convert bytes to PIL image in a thread
+    frame_img = await asyncio.to_thread(
+        lambda: Image.open(io.BytesIO(combined_png_bytes)).convert("RGBA")
+    )
+    return frame_img
+
+
+async def process_all_frames(num_frames, num_layers, imgs_frames, bg_size, overlay_size, is_minted):
+    tasks = [
+        process_frame(i, num_layers, imgs_frames, bg_size, overlay_size, is_minted)
+        for i in range(num_frames)
+    ]
+    pil_frames = await asyncio.gather(*tasks)
+    return pil_frames
+
+
+async def get_combined_anim(
         sorted_traits: list,
         bg_size=(552, 736),
         overlay_size=(380, 600),
@@ -52,34 +88,18 @@ def get_combined_anim(
             raise ValueError("No traits found")
 
         # 2. Get timing and expand frames based on LCM
-        traits_info, total_ts = get_traits_info(sorted_traits)
+        traits_info, total_ts = await get_traits_info(sorted_traits)
         total_t_lcm = lcm_of_list(total_ts)
-        print(total_t_lcm)
         # imgs_frames is a list of lists: [layer_index][frame_index]
-        imgs_frames = generate_frames(sorted_traits, traits_info, total_t_lcm)
+        imgs_frames = await generate_frames(sorted_traits, traits_info, total_t_lcm)
 
         num_frames = len(imgs_frames[0])
         num_layers = len(imgs_frames)
 
         # 3. Composite layers for EVERY frame
         # We ensure each frame starts with a clean base
-        pil_frames = []
-        for i in range(num_frames):
-            current_layers = []
-            for j in range(num_layers):
-                current_layers.append(imgs_frames[j][i])
 
-            # Get combined bytes (This function handles the alpha_composite)
-            combined_png_bytes = get_combined_img_bytes(
-                current_layers,
-                bg_size=bg_size,
-                overlay_size=overlay_size,
-                is_minted=is_minted
-            )
-
-            # Open as RGBA to preserve transparency for the saving process
-            frame_img = Image.open(io.BytesIO(combined_png_bytes)).convert("RGBA")
-            pil_frames.append(frame_img)
+        pil_frames = await process_all_frames(num_frames, num_layers, imgs_frames, bg_size, overlay_size, is_minted)
 
         # 4. Save with "Complete Redraw" (Disposal Method 2)
         animated_bytes = io.BytesIO()

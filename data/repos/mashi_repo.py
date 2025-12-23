@@ -123,7 +123,7 @@ class MashiRepo:
                 ordered_traits.append(generate_minted_svg(nft_name))
 
             if is_animated:
-                png_bytes = get_combined_anim(
+                png_bytes = await get_combined_anim(
                     ordered_traits,
                     is_minted=bool(mint),
                     type=img_type,
