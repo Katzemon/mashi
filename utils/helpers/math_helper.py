@@ -2,6 +2,8 @@ import math
 from functools import reduce
 from typing import Union
 
+from utils.helpers.constants import ANIM_STEP
+
 Number = Union[int, float]
 
 def _lcm(a: Number, b: Number) -> float:
@@ -40,15 +42,15 @@ def lcm_of_list(numbers: list[Number]) -> float:
     return reduce(_lcm, numbers)
 
 def correct_timing(frame_t: float) -> float:
-    if frame_t < 0.06:
-        return 0.06
+    if frame_t < ANIM_STEP:
+        return ANIM_STEP
     else:
-        mod = frame_t % 0.06
+        mod = frame_t % ANIM_STEP
 
         addition = 0
-        if mod > 0.03:
+        if mod > ANIM_STEP / 2:
             addition = mod
-        if mod < 0.03:
+        if mod < ANIM_STEP / 2:
             addition = -mod
 
         return frame_t + addition

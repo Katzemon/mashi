@@ -3,10 +3,12 @@ import io
 from PIL import Image
 
 from utils.helpers.apng.apng_helper import get_apng_frames_as_bytes, is_apng
-from utils.helpers.gif.gif_helper import extract_first_frame, is_gif, get_gif_frames_as_bytes
+from utils.helpers.constants import ANIM_STEP
+from utils.helpers.gif.gif_helper import is_gif, get_gif_frames_as_bytes
 from utils.helpers.math_helper import lcm_of_list
 from utils.helpers.traits_helper import get_traits_info
 from utils.helpers.combiners.combiner import get_combined_img_bytes
+from utils.helpers.webp.webp_helper import get_webp_frames_as_bytes
 
 
 def generate_frames(sorted_traits, traits_info, total_t_lcm):
@@ -15,14 +17,16 @@ def generate_frames(sorted_traits, traits_info, total_t_lcm):
         if trait_info.is_animated:
             if is_apng(sorted_traits[index]):
                 img_frames = get_apng_frames_as_bytes(sorted_traits[index])
-            else:
+            elif is_gif(sorted_traits[index]):
                 img_frames = get_gif_frames_as_bytes(sorted_traits[index])
+            else:
+                img_frames = get_webp_frames_as_bytes(sorted_traits[index])
         else:
             img_frames = [sorted_traits[index]]
 
         # extend with frames
-        if trait_info.frame_t > 0.06:
-            repeat_count = round(trait_info.frame_t / 0.06)
+        if trait_info.frame_t > ANIM_STEP:
+            repeat_count = round(trait_info.frame_t / ANIM_STEP)
             img_frames = [item for item in img_frames for _ in range(repeat_count)]
 
         # extend duration
@@ -46,8 +50,6 @@ def get_combined_anim(
     try:
         if not sorted_traits:
             raise ValueError("No traits found")
-
-        # 1. Prepare base traits (Extract static frame if GIF)
 
         # 2. Get timing and expand frames based on LCM
         traits_info, total_ts = get_traits_info(sorted_traits)

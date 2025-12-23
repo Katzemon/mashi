@@ -37,7 +37,7 @@ class MashiApi:
             {"name":"eyes","image":"https://ipfs.io/ipfs/QmYFGZm34kNADVEf44YxihmtCgRjr1itTvuWVuSVqkTABi"},
             {"name":"hair_front","image":"https://ipfs.io/ipfs/QmUZxRsQc8z2TMmiod3mSUeRh5wespJGarRELYZV9Zbw1o"},
             {"name":"hat","image":"https://ipfs.io/ipfs/QmNZwsJVARPhy6Vs9jRzxjt9t5HWH3Bf5kuAGxTQ3kZBS9"},
-            {"name":"left_accessory","image":"https://ipfs.io/ipfs/QmUYr95SvARnDXrMgTF3dUo98Z1p91LEnqGMBNcfaXB4FU"},
+            #{"name":"left_accessory","image":"https://ipfs.io/ipfs/QmUYr95SvARnDXrMgTF3dUo98Z1p91LEnqGMBNcfaXB4FU"},
             {"name":"right_accessory","image":"https://ipfs.io/ipfs/QmanMmH6SqCo8WH7VaUDrauXsu6HXkiQWVQ7RQafgmujom"}
         ]
 

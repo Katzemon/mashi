@@ -2,8 +2,9 @@
 
 from PIL import Image
 
-from utils.helpers.gif.gif_helper import extract_first_frame, is_gif
+from utils.helpers.gif.gif_helper import extract_first_gif_frame, is_gif
 from utils.helpers.svg.svg_helper import svg_bytes_to_img, is_svg
+from utils.helpers.webp.webp_helper import is_webp, extract_first_webp_frame
 
 resample_mode = Image.Resampling.LANCZOS
 
@@ -20,7 +21,9 @@ def get_combined_img_bytes(
 
         for index, trait in enumerate(sorted_traits):
             if is_gif(trait):
-                sorted_traits[index] = extract_first_frame(trait)
+                sorted_traits[index] = extract_first_gif_frame(trait)
+            if is_webp(trait):
+                sorted_traits[index] = extract_first_webp_frame(trait)
 
         bg_trait = sorted_traits[0]
         if is_svg(bg_trait):
