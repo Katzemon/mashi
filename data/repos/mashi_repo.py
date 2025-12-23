@@ -8,7 +8,7 @@ from data.remote.mashi_api import MashiApi
 from utils.helpers.combiners.anim_combiner import get_combined_anim
 from utils.helpers.combiners.combiner import get_combined_img_bytes
 from utils.helpers.generator import generate_minted_svg
-from utils.helpers.svg.svg_helper import replace_colors
+from utils.helpers.svg.svg_helper import replace_colors, is_svg
 
 layer_order = [
     "background",
@@ -51,7 +51,7 @@ class MashiRepo:
 
             src = self._images_api.get_image_src(image_url)
 
-            if src.lstrip().startswith(b"<svg"):
+            if is_svg(src):
                 src = replace_colors(
                     src,
                     body_color=colors.get("base"),
