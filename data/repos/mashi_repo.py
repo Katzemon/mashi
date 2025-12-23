@@ -5,9 +5,10 @@ from data.models.mashup_error import MashupError
 from data.remote.alchemy_api import AlchemyApi
 from data.remote.images_api import ImagesApi
 from data.remote.mashi_api import MashiApi
-from utils.helpers.combiner import get_combined_img_bytes, get_combined_webp
+from utils.helpers.combiners.anim_combiner import get_combined_anim
+from utils.helpers.combiners.combiner import get_combined_img_bytes
 from utils.helpers.generator import generate_minted_svg
-from utils.helpers.svg_helper import replace_colors
+from utils.helpers.svg.svg_helper import replace_colors
 
 layer_order = [
     "background",
@@ -50,7 +51,7 @@ class MashiRepo:
 
             src = self._images_api.get_image_src(image_url)
 
-            if type(src) is str:
+            if src.lstrip().startswith(b"<svg"):
                 src = replace_colors(
                     src,
                     body_color=colors.get("base"),
@@ -63,6 +64,7 @@ class MashiRepo:
         except Exception as e:
             print(e)
             return None
+
 
     def _check_mint_ownership(self, wallet: str, assets: list, mint: int) -> str | MashupError:
         background_uri = next(
@@ -82,11 +84,14 @@ class MashiRepo:
 
         return nft_name
 
-    async def get_composite(self, wallet: str, mint: int | None = None, is_animated: bool = False,
+    async def get_composite(self, wallet: str, mint: int | None = None, is_test = False, is_animated: bool = False,
                             img_type: int = 0) -> str | MashupError:
         mashup = None
         try:
-            mashup = self._mashi_api.get_mashi_data(wallet)
+            if is_test:
+                mashup = self._mashi_api.simulate_mashi_data()
+            else:
+                mashup = self._mashi_api.get_mashi_data(wallet)
             assets = mashup.get("assets", [])
             colors = mashup.get("colors", {})
 
@@ -118,7 +123,7 @@ class MashiRepo:
                 ordered_traits.append(generate_minted_svg(nft_name))
 
             if is_animated:
-                png_bytes = get_combined_webp(
+                png_bytes = get_combined_anim(
                     ordered_traits,
                     is_minted=bool(mint),
                     type=img_type

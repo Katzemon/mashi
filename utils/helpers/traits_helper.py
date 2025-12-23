@@ -1,7 +1,7 @@
-from data.models.image_format import ImageFormat
 from data.models.traits_info import TraitsInfo
-from utils.helpers.apng_helper import get_apng_info, check_if_apng
-from utils.helpers.gif_helper import is_gif
+from utils.helpers.apng.apng_helper import get_apng_info, is_apng
+from utils.helpers.gif.gif_helper import is_gif, get_gif_info
+from utils.helpers.math_helper import correct_timing
 
 
 def get_traits_info(sorted_traits):
@@ -9,39 +9,44 @@ def get_traits_info(sorted_traits):
     total_ts = []
 
     for trait in sorted_traits:
-        is_apng = check_if_apng(trait)
-        gif = is_gif(trait)
-        if is_apng:
+        if is_apng(trait):
             num_frames, total_duration = get_apng_info(trait)
+            frame_t = correct_timing(total_duration / num_frames)
+            total_duration = round(frame_t * num_frames, 2)
+
             traits_info.append(
                 TraitsInfo(
                     frames=num_frames,
-                    frame_t=total_duration/num_frames,
+                    frame_t=frame_t,
                     total_t=total_duration,
                     is_animated=True,
-                    img_format=ImageFormat.APNG,
                 )
             )
             total_ts.append(total_duration)
-        elif gif:
+        elif is_gif(trait):
+            num_frames, total_duration = get_gif_info(trait)
+            frame_t = correct_timing(total_duration / num_frames)
+            total_duration = round(frame_t * num_frames, 2)
+
             traits_info.append(
                 TraitsInfo(
                     frames=1,
-                    frame_t=0.1,
-                    total_t=0.1,
-                    is_animated=False,
-                    img_format=ImageFormat.GIF,
+                    frame_t=frame_t,
+                    total_t=total_duration,
+                    is_animated=True,
                 )
             )
+            total_ts.append(total_duration)
         else:
             traits_info.append(
                 TraitsInfo(
                     frames=1,
-                    frame_t=0.1,
-                    total_t=0.1,
+                    frame_t=0.06,
+                    total_t=0.06,
                     is_animated=False
                 )
             )
-            total_ts.append(0.1)
+            total_ts.append(0.06)
 
+    print(traits_info)
     return traits_info, total_ts

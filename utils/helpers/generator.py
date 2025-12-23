@@ -1,7 +1,7 @@
 import re
 
 
-def generate_minted_svg(nft_name: str) -> str:
+def generate_minted_svg(nft_name: str) -> bytes:
     pattern = r"(.+)\s+by\s+(.+)"
     match = re.match(pattern, nft_name)
     if match:
@@ -22,4 +22,4 @@ def generate_minted_svg(nft_name: str) -> str:
     >
         {before_by}
     </text>
-</svg>""")
+</svg>""".encode("utf-8"))

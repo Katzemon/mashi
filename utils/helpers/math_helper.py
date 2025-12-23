@@ -38,3 +38,17 @@ def lcm_of_list(numbers: list[Number]) -> float:
     Calculate LCM of a list of numbers (int or float).
     """
     return reduce(_lcm, numbers)
+
+def correct_timing(frame_t: float) -> float:
+    if frame_t < 0.06:
+        return 0.06
+    else:
+        mod = frame_t % 0.06
+
+        addition = 0
+        if mod > 0.03:
+            addition = mod
+        if mod < 0.03:
+            addition = -mod
+
+        return frame_t + addition

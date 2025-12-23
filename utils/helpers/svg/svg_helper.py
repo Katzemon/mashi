@@ -1,7 +1,18 @@
-﻿import re
+﻿import io
+import re
+
+import cairosvg
+from PIL import Image
+
+resample_mode = Image.Resampling.LANCZOS
 
 
-def remove_redundant_info(svg: str) -> str:
+def is_svg(svg_bytes) -> bool:
+    return svg_bytes.lstrip().startswith(b"<svg")
+
+
+def remove_redundant_info(svg_bytes) -> bytes:
+    svg = svg_bytes.decode("utf-8")
     svg = re.sub(r"<\?xml.*?\?>", "", svg)
     svg = re.sub(r"<!DOCTYPE.*?>", "", svg)
     svg = re.sub(r'serif:[^"]*"[^"]*"', '', svg)
@@ -11,10 +22,11 @@ def remove_redundant_info(svg: str) -> str:
     svg = re.sub(r'\s*inkscape:[^=]+="[^"]*"', '', svg)
     svg = re.sub(r'<SODI[^>]*>', '', svg)
     svg = re.sub(r'<!--.*?-->', '', svg)
-    return svg.strip()
+    return svg.strip().replace('\n', '').encode("utf-8")
 
 
-def replace_colors(svg_str: str, body_color: str, eyes_color: str, hair_color: str) -> str:
+def replace_colors(svg_bytes, body_color: str, eyes_color: str, hair_color: str) -> bytes:
+    svg_str = svg_bytes.decode("utf-8")
     # replace body color
     svg_str = re.sub(
         r"#00ff00|#0f0\b|\blime\b|rgb\s*\(\s*0\s*,\s*255\s*,\s*0\s*\)",
@@ -32,4 +44,18 @@ def replace_colors(svg_str: str, body_color: str, eyes_color: str, hair_color: s
         r"#0000ff|#00f\b|\bblue\b|rgb\s*\(\s*0\s*,\s*0\s*,\s*255\s*\)",
         hair_color, svg_str, flags=re.IGNORECASE
     )
-    return svg_str
+    return svg_str.replace('\n', '').encode("utf-8")
+
+
+def svg_bytes_to_img(svg_bytes, target_size=None):
+    try:
+        svg_bytes = remove_redundant_info(svg_bytes)
+        png_bytes = cairosvg.svg2png(bytestring=svg_bytes)
+
+        img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+        if target_size:
+            img = img.resize(target_size, resample=resample_mode)
+
+        return img
+    except Exception as e:
+        print(e)

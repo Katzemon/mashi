@@ -8,13 +8,7 @@ class ImagesApi:
             if res.status_code != 200:
                 return None
 
-            content_type = res.headers.get("Content-Type", "").lower()
-            if "svg" in content_type:
-                src = res.text
-            else:
-                src = res.content
-
-            return src
+            return res.content
 
         except Exception as e:
             print(e)

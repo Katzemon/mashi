@@ -9,4 +9,3 @@ class TraitsInfo:
     frame_t: float
     total_t: float
     is_animated: bool
-    img_format: ImageFormat = ImageFormat.PNG
