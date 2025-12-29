@@ -8,7 +8,7 @@ from utils.combiners.helpers.math_helper import correct_timing
 from utils.combiners.modules.webp_module import is_webp, get_webp_info
 
 # Limit concurrent thread usage
-THREAD_LIMIT = 10
+THREAD_LIMIT = 5
 thread_semaphore = asyncio.Semaphore(THREAD_LIMIT)
 
 

@@ -23,7 +23,7 @@ from utils.combiners.modules.webp_module import get_webp_frames_as_bytes
 # THREAD LIMITER (GLOBAL, SHARED)
 # ============================================================
 
-THREAD_LIMIT = 10
+THREAD_LIMIT = 5
 _thread_semaphore = asyncio.Semaphore(THREAD_LIMIT)
 
 
