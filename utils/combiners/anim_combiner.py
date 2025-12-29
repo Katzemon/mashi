@@ -155,6 +155,8 @@ async def get_combined_anim(
         if total_t_lcm > max(total_ts) * 2:
             total_t_lcm = max(total_ts) * 2
 
+        if total_t_lcm > 5.0:
+            total_t_lcm = 5.0
 
         # 2. Expand trait frames to LCM duration
         imgs_frames = await generate_frames(
