@@ -82,7 +82,6 @@ class MashiModule(commands.Cog):
     @app_commands.choices(img_type=[
         app_commands.Choice(name="Static", value=0),
         app_commands.Choice(name="GIF", value=1),
-        app_commands.Choice(name="WEBP", value=2),
     ])
     async def mashi(self, interaction: discord.Interaction, img_type: int = 0, mint: int | None = None):
         try:
@@ -141,8 +140,7 @@ class MashiModule(commands.Cog):
     @app_commands.describe(img_type="Static/Animated")
     @app_commands.choices(img_type=[
         app_commands.Choice(name="Static", value=0),
-        app_commands.Choice(name="GIF", value=1),
-        app_commands.Choice(name="WEBP", value=2),
+        app_commands.Choice(name="GIF", value=1)
     ])
     async def for_testing_purpose(self, interaction: discord.Interaction, img_type: int = 0):
         try:

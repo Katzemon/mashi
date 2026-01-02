@@ -74,15 +74,42 @@ if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
 
     const imageUrls = await getImageUrlsFromStdin()
     const htmlContent = `
-    <html>
-      <body style="margin:0; padding:0; width:${gifWidth}px; height:${gifHeight}px; background:transparent; overflow:hidden;">
-        ${imageUrls.map((url, i) => `
-          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:${i};">
-            <img src="${url}" style="max-width:${gifWidth}px; max-height:${gifHeight}px; object-fit:contain;" />
-          </div>
-        `).join('')}
-      </body>
-    </html>`;
+<html>
+  <body style="
+    margin: 0; 
+    padding: 0; 
+    /* Force the body to be exactly 380x600 as a baseline */
+    width: 380px; 
+    height: 600px;
+    /* Allow it to expand ONLY up to the input sizes */
+    max-width: ${gifWidth}px;
+    max-height: ${gifHeight}px;
+    background: transparent; 
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  ">
+    ${imageUrls.map((url, i) => `
+      <div style="
+        position: absolute; 
+        inset: 0; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        z-index: ${i};
+      ">
+        <img src="${url}" style="
+          /* This ensures the image never exceeds the 380x600 box */
+          /* unless the body itself is allowed to be larger */
+          max-width: 100%; 
+          max-height: 100%; 
+          object-fit: contain;
+        " />
+      </div>
+    `).join('')}
+  </body>
+</html>`;
 
     await page.setContent(htmlContent);
 
