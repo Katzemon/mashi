@@ -75,37 +75,18 @@ if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
     const imageUrls = await getImageUrlsFromStdin()
     const htmlContent = `
 <html>
-  <body style="
-    margin: 0; 
-    padding: 0; 
-    /* Force the body to be exactly 380x600 as a baseline */
-    width: 380px; 
-    height: 600px;
-    /* Allow it to expand ONLY up to the input sizes */
-    max-width: ${gifWidth}px;
-    max-height: ${gifHeight}px;
-    background: transparent; 
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  ">
+  <body style="margin:0; padding:0; width:552px; height:736px; background:transparent; overflow:hidden;">
     ${imageUrls.map((url, i) => `
-      <div style="
-        position: absolute; 
-        inset: 0; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        z-index: ${i};
+      <div class="img-container" style="
+        position:absolute; 
+        inset:0; 
+        display:flex; 
+        align-items:center; 
+        justify-content:center; 
+        z-index:${i};
+        box-sizing: border-box;
       ">
-        <img src="${url}" style="
-          /* This ensures the image never exceeds the 380x600 box */
-          /* unless the body itself is allowed to be larger */
-          max-width: 100%; 
-          max-height: 100%; 
-          object-fit: contain;
-        " />
+        <img src="${url}" style="width: 100%; height: 100%; object-fit: contain;" />
       </div>
     `).join('')}
   </body>
@@ -113,10 +94,31 @@ if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
 
     await page.setContent(htmlContent);
 
-    // Ensure assets are loaded
+    // Precise loading and aspect-ratio padding application
     await page.evaluate(async () => {
         const imgs = Array.from(document.querySelectorAll('img'));
-        await Promise.all(imgs.map(i => i.complete ? Promise.resolve() : new Promise(r => i.onload = r)));
+        await Promise.all(imgs.map(img => {
+            return new Promise((resolve) => {
+                if (img.complete) {
+                    applyLogic(img);
+                    resolve();
+                } else {
+                    img.onload = () => {
+                        applyLogic(img);
+                        resolve();
+                    };
+                }
+            });
+        }));
+
+        function applyLogic(img) {
+            const ratio = img.naturalWidth / img.naturalHeight;
+            // Check if NOT 3:4 (0.75)
+            if (Math.abs(ratio - 0.75) > 0.01) {
+                // Apply the 380x600 equivalent padding
+                img.parentElement.style.padding = "68px 86px";
+            }
+        }
     });
 
     const client = await page.target().createCDPSession();
