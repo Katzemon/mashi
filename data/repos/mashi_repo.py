@@ -5,6 +5,7 @@ from data.models.mashup_error import MashupError
 from data.remote.alchemy_api import AlchemyApi
 from data.remote.images_api import ImagesApi
 from data.remote.mashi_api import MashiApi
+from utils.combiners.anim.gif_combiner import get_combined_gif
 from utils.combiners.anim_combiner import get_combined_anim
 from utils.combiners.combiner import get_combined_img_bytes
 from utils.combiners.helpers.mint_helper import generate_minted_svg
@@ -131,11 +132,12 @@ class MashiRepo:
                     is_minted=bool(mint),
                 )
             else:
-                png_bytes = await get_combined_anim(
-                    ordered_traits,
-                    is_minted=bool(mint),
-                    img_type=img_type,
-                )
+                # png_bytes = await get_combined_anim(
+                #     ordered_traits,
+                #     is_minted=bool(mint),
+                #     img_type=img_type,
+                # )
+                png_bytes = await get_combined_gif(ordered_traits)
 
             if png_bytes:
                 return png_bytes
