@@ -130,8 +130,10 @@ class MashiRepo:
                     ordered_traits,
                     is_minted=bool(mint),
                 )
-            else:
+            elif img_type == 1:
                 png_bytes = await GifService.get_instance().create_gif(ordered_traits)
+            else:
+                png_bytes = await GifService.get_instance().create_gif(ordered_traits, length = 2)
 
             if png_bytes:
                 return png_bytes

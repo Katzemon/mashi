@@ -81,7 +81,8 @@ class MashiModule(commands.Cog):
     @app_commands.describe(img_type="Static/Animated", mint="#Mint")
     @app_commands.choices(img_type=[
         app_commands.Choice(name="Static", value=0),
-        app_commands.Choice(name="GIF", value=1),
+        app_commands.Choice(name="Shorter GIF", value=1),
+        app_commands.Choice(name="Longer GIF", value=2)
     ])
     async def mashi(self, interaction: discord.Interaction, img_type: int = 0, mint: int | None = None):
         try:
@@ -92,10 +93,8 @@ class MashiModule(commands.Cog):
             if wallet:
                 if img_type == 0:
                     ext = ".png"
-                elif img_type == 1:
-                    ext = ".gif"
                 else:
-                    ext = ".webp"
+                    ext = ".gif"
 
                 data = await self._mashi_repo.get_composite(wallet, img_type=img_type, mint=mint)
                 if data:
@@ -140,7 +139,8 @@ class MashiModule(commands.Cog):
     @app_commands.describe(img_type="Static/Animated")
     @app_commands.choices(img_type=[
         app_commands.Choice(name="Static", value=0),
-        app_commands.Choice(name="GIF", value=1)
+        app_commands.Choice(name="Shorter GIF", value=1),
+        app_commands.Choice(name="Longer GIF", value=2)
     ])
     async def for_testing_purpose(self, interaction: discord.Interaction, img_type: int = 0):
         try:
@@ -159,12 +159,10 @@ class MashiModule(commands.Cog):
                 if img_type == 0:
                     data = await self._mashi_repo.get_composite(wallet, mint=1, is_test=True)
                     ext = ".png"
-                elif img_type == 1:
-                    data = await self._mashi_repo.get_composite(wallet, img_type=img_type, mint=1, is_test=True)
-                    ext = ".gif"
                 else:
                     data = await self._mashi_repo.get_composite(wallet, img_type=img_type, mint=1, is_test=True)
-                    ext = ".webp"
+                    ext = ".gif"
+
 
                 if data:
                     if type(data) is not bytes:

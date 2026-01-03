@@ -60,7 +60,7 @@ class GifService:
                 err = await self.process.stderr.read()
                 raise Exception(f"Failed to start Node service: {err.decode()}")
 
-    async def create_gif(self, trait_buffers: list):
+    async def create_gif(self, trait_buffers: list, length = 1):
         if not self._is_ready:
             await self.start()
 
@@ -76,7 +76,7 @@ class GifService:
 
             payload = {
                 "images": images,
-                "max_t": max_t * 2,  # 👈 pass timing info
+                "max_t": max_t * length,  # 👈 pass timing info
             }
 
             async with httpx.AsyncClient(timeout=120.0) as client:
