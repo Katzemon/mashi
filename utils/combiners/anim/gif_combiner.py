@@ -1,11 +1,12 @@
-import subprocess
-import base64
-import json
 import asyncio
+import base64
 import os
+
+import httpx
 
 # 1. Initialize the Semaphore globally to limit concurrency to 2
 process_limit = asyncio.Semaphore(2)
+
 
 def get_mime_type(data: bytes) -> str:
     # ... (Keep your existing get_mime_type code here) ...
@@ -15,46 +16,74 @@ def get_mime_type(data: bytes) -> str:
     if data.startswith(b'GIF87a') or data.startswith(b'GIF89a'): return "image/gif"
     return "image/png"
 
-async def get_combined_gif(
-        sorted_traits: list,
-        bg_size=(552, 736),
-        overlay_size=(380, 600),
-        img_type: int = 0,
-        is_minted=False,
-):
-    # 2. Use the Semaphore context manager
-    # This will automatically queue any calls beyond the first 2
-    async with process_limit:
-        # Prepare Base64 Data URIs
-        b64_images = []
-        for trait_bytes in sorted_traits:
-            mime_type = get_mime_type(trait_bytes)
-            encoded = base64.b64encode(trait_bytes).decode('utf-8')
-            b64_images.append(f"data:{mime_type};base64,{encoded}")
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        js_path = os.path.join(current_dir, 'gif.js')
+class GifService:
+    _instance = None
 
-        try:
-            process = await asyncio.create_subprocess_exec(
-                'node', js_path,
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
+    def __init__(self):
+        if GifService._instance is not None:
+            raise Exception("This class is a singleton! Use GifService.get_instance()")
+        self.process = None
+        self.semaphore = asyncio.Semaphore(2)  # Limit concurrency to 2
+        self.endpoint = "http://localhost:3000"
+        self._is_ready = False
 
-            input_json = json.dumps(b64_images).encode('utf-8')
-            stdout, stderr = await process.communicate(input=input_json)
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
 
-            if process.returncode == 0:
-                if not stdout:
-                    return None
-                print(f"Generated GIF: {len(stdout) / (1024 * 1024):.2f} MB")
-                return stdout
-            else:
-                print(f"Node.js Error: {stderr.decode('utf-8')}")
+    async def start(self):
+        """Spawns the Node.js sidecar process if not already running."""
+        if self._is_ready:
+            return
+
+        js_path = os.path.join(os.path.dirname(__file__), 'gif.js')
+
+        self.process = await asyncio.create_subprocess_exec(
+            'node', js_path,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+
+        # Wait for Node to signal that the browser is open
+        while True:
+            line = await self.process.stdout.readline()
+            if b'SERVICE_READY' in line:
+                self._is_ready = True
+                print("✅ Singleton GifService: Browser process started.")
+                break
+            if self.process.returncode is not None:
+                err = await self.process.stderr.read()
+                raise Exception(f"Failed to start Node service: {err.decode()}")
+
+    async def create_gif(self, trait_buffers: list):
+        """Queues and executes GIF generation."""
+        if not self._is_ready:
+            await self.start()
+
+        async with self.semaphore:
+            # Prepare Data URIs
+            payload = []
+            for buf in trait_buffers:
+                mime = get_mime_type(buf)
+                b64 = base64.b64encode(buf).decode('utf-8')
+                payload.append(f"data:{mime};base64,{b64}")
+
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                try:
+                    response = await client.post(self.endpoint, json=payload)
+                    if response.status_code == 200:
+                        return response.content
+                    print(f"❌ Service Error: {response.status_code}")
+                except Exception as e:
+                    print(f"❌ Connection Error: {e}")
                 return None
 
-        except Exception as e:
-            print(f"Python Subprocess Error: {e}")
-            return None
+    def stop(self):
+        """Kills the background Node process."""
+        if self.process:
+            self.process.terminate()
+            self._is_ready = False
+            print("🛑 Singleton GifService: Stopped.")

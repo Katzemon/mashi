@@ -5,8 +5,7 @@ from data.models.mashup_error import MashupError
 from data.remote.alchemy_api import AlchemyApi
 from data.remote.images_api import ImagesApi
 from data.remote.mashi_api import MashiApi
-from utils.combiners.anim.gif_combiner import get_combined_gif
-from utils.combiners.anim_combiner import get_combined_anim
+from utils.combiners.anim.gif_combiner import GifService
 from utils.combiners.combiner import get_combined_img_bytes
 from utils.combiners.helpers.mint_helper import generate_minted_svg
 from utils.combiners.modules.svg_module import replace_colors, is_svg
@@ -67,7 +66,6 @@ class MashiRepo:
             print(e)
             return None
 
-
     def _check_mint_ownership(self, wallet: str, assets: list, mint: int) -> str | MashupError:
         background_uri = next(
             (item["image"] for item in assets if item["name"] == "background"),
@@ -86,7 +84,8 @@ class MashiRepo:
 
         return nft_name
 
-    async def get_composite(self, wallet: str, mint: int | None = None, is_test = False, img_type: int = 0) -> str | MashupError:
+    async def get_composite(self, wallet: str, mint: int | None = None, is_test=False,
+                            img_type: int = 0) -> str | MashupError:
         mashup = None
         try:
             if is_test:
@@ -132,12 +131,7 @@ class MashiRepo:
                     is_minted=bool(mint),
                 )
             else:
-                # png_bytes = await get_combined_anim(
-                #     ordered_traits,
-                #     is_minted=bool(mint),
-                #     img_type=img_type,
-                # )
-                png_bytes = await get_combined_gif(ordered_traits)
+                png_bytes = await GifService.get_instance().create_gif(ordered_traits)
 
             if png_bytes:
                 return png_bytes

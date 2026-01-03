@@ -8,6 +8,8 @@ from server.server import app
 
 from pathlib import Path
 
+from utils.combiners.anim.gif_combiner import GifService
+
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 def start_uvicorn():
@@ -28,6 +30,7 @@ def start_uvicorn_80():
 
 async def main():
     db.init()
+    await GifService.get_instance().start()
 
     server_task = asyncio.to_thread(start_uvicorn)
     http_server_task = asyncio.to_thread(start_uvicorn_80)

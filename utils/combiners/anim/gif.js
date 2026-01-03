@@ -1,175 +1,116 @@
 const puppeteer = require('puppeteer');
+const http = require('http');
 const fs = require('fs');
-const {execSync} = require('child_process');
 const path = require('path');
+const { execSync } = require('child_process');
 const crypto = require('crypto');
 
-// const imageUrls = [
-//     'https://ipfs.io/ipfs/QmfC3THkEpnp5tNZesVLe1PJVc5eHUdvCcRHumFyqfWXgj',
-//     'https://ipfs.io/ipfs/QmVAHYhcYN9T1aEurto4gfgdANiL79TRDuSMsMKTwbTKKs',
-//     'https://ipfs.io/ipfs/Qmeqdu3gwazWns3wAisqt634XLBFhQHNmUjRmi3HnTXU8F',
-//     'https://ipfs.io/ipfs/QmWLKoHaQ42xPcait723VpCok54SiEAuokMsdmLhfVA6pH',
-//     'https://ipfs.io/ipfs/QmdmQRA5Lat8oQbx8MF2zryt1PTM6VMVyAfmGzwD3Xxdwx'
-// ];
+const PORT = 3000;
+const gifWidth = 552;
+const gifHeight = 736;
+const frameDelayMs = 30;
+const captureFps = 33.33;
+const playbackFps = 30;
+const durationSeconds = 5;
+const totalFrames = durationSeconds * captureFps;
 
-function getImageUrlsFromStdin() {
-    let inputData = '';
-    return new Promise((resolve, reject) => {
-        process.stdin.on('data', chunk => {
-            inputData += chunk;
-        });
-        process.stdin.on('end', () => {
-            try {
-                const urls = JSON.parse(inputData);
-                resolve(urls);
-            } catch (err) {
-                reject(new Error("Failed to parse JSON input: " + err.message));
-            }
-        });
-        process.stdin.on('error', reject);
+let browser;
+
+async function startService() {
+    browser = await puppeteer.launch({
+        headless: "new",
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-frame-rate-limit', '--disable-gpu']
+    });
+
+    http.createServer(async (req, res) => {
+        if (req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', async () => {
+                try {
+                    const imageUrls = JSON.parse(body);
+                    const gifBuffer = await generateGif(imageUrls);
+                    res.writeHead(200, { 'Content-Type': 'image/gif' });
+                    res.end(gifBuffer);
+                } catch (err) {
+                    console.error("Internal Error:", err);
+                    res.writeHead(500);
+                    res.end(err.message);
+                }
+            });
+        }
+    }).listen(PORT, () => {
+        // Python listens for this specific string to know the service is ready
+        console.log("SERVICE_READY");
     });
 }
 
-const uniqueId = crypto.randomUUID();
-const framesDir = path.join(__dirname, `frames-${uniqueId}`);
+async function generateGif(imageUrls) {
+    const uniqueId = crypto.randomUUID();
+    const framesDir = path.join(__dirname, `frames-${uniqueId}`);
+    if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
 
-const gifWidth = 552;
-const gifHeight = 736;
-const durationSeconds = 5;
+    // Create an isolated incognito-like window
+    const context = await browser.createBrowserContext();
+    const page = await context.newPage();
+    await page.setViewport({ width: gifWidth, height: gifHeight });
 
-// --- DUAL RATE CONFIGURATION ---
-const frameDelayMs = 30;    // We still capture every 30ms (High resolution)
-const captureFps = 33.33;   // (1000 / 30)
-
-// CHANGE THIS: Lower value = Slower GIF.
-// If it was "a bit" too fast, try 20-25. If it was "way" too fast, try 10-12.
-const playbackFps = 30;
-
-const totalFrames = durationSeconds * captureFps;
-// Clean and create frames directory
-if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
-
-(async () => {
-    const browser = await puppeteer.launch({
-        headless: "new",
-        args: [
-            '--disable-gpu',
-            '--disable-software-rasterizer=false',
-            '--disable-dev-shm-usage',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding',
-            '--disable-frame-rate-limit',
-            '--no-sandbox',
-            //'--disable-setuid-sandbox',
-            //'--disable-dev-shm-usage', // Critical for VPS environments
-            //'--disable-accelerated-2d-canvas',
-            //'--disable-gpu', // Let the browser use standard headless rendering
-            //'--no-zygote',
-            //'--single-process' // Reduces memory overhead on small droplets
-        ]
-    });
-    const page = await browser.newPage();
-    await page.setViewport({width: gifWidth, height: gifHeight});
-
-    const imageUrls = await getImageUrlsFromStdin()
     const htmlContent = `
-<html>
-  <body style="margin:0; padding:0; width:552px; height:736px; background:transparent; overflow:hidden;">
-    ${imageUrls.map((url, i) => `
-      <div class="img-container" style="
-        position:absolute; 
-        inset:0; 
-        display:flex; 
-        align-items:center; 
-        justify-content:center; 
-        z-index:${i};
-        box-sizing: border-box;
-      ">
-        <img src="${url}" style="width: 100%; height: 100%; object-fit: contain;" />
-      </div>
-    `).join('')}
-  </body>
-</html>`;
+    <html>
+      <body style="margin:0; padding:0; width:${gifWidth}px; height:${gifHeight}px; background:transparent; overflow:hidden;">
+        ${imageUrls.map((url, i) => `
+          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:${i};">
+            <img src="${url}" style="width:100%; height:100%; object-fit:contain;" />
+          </div>
+        `).join('')}
+      </body>
+    </html>`;
 
     await page.setContent(htmlContent);
 
-    // Precise loading and aspect-ratio padding application
-    await page.evaluate(async () => {
-        const imgs = Array.from(document.querySelectorAll('img'));
-        await Promise.all(imgs.map(img => {
-            return new Promise((resolve) => {
-                if (img.complete) {
-                    applyLogic(img);
-                    resolve();
-                } else {
-                    img.onload = () => {
-                        applyLogic(img);
-                        resolve();
-                    };
-                }
-            });
-        }));
-
-        function applyLogic(img) {
+    // Image logic: Apply padding if aspect ratio isn't 3:4
+    await page.evaluate(() => {
+        document.querySelectorAll('img').forEach(img => {
             const ratio = img.naturalWidth / img.naturalHeight;
-            // Check if NOT 3:4 (0.75)
             if (Math.abs(ratio - 0.75) > 0.01) {
-                // Apply the 380x600 equivalent padding
                 img.parentElement.style.padding = "68px 86px";
             }
-        }
+        });
     });
 
     const client = await page.target().createCDPSession();
-
-    // Virtual Time ensures we don't drop frames during the 30ms "steps"
     await client.send('Emulation.setVirtualTimePolicy', {
-        policy: 'advance',
-        budget: totalFrames * frameDelayMs
+        policy: 'advance', budget: totalFrames * frameDelayMs
     });
 
-
+    // Capture Frames
     for (let i = 0; i < totalFrames; i++) {
         const framePath = path.join(framesDir, `frame_${String(i).padStart(3, '0')}.png`);
-        await page.screenshot({path: framePath, omitBackground: true});
-
-        // Advance browser clock by 30ms
+        await page.screenshot({ path: framePath, omitBackground: true });
         await client.send('Emulation.setVirtualTimePolicy', {
-            policy: 'advance',
-            budget: frameDelayMs
+            policy: 'advance', budget: frameDelayMs
         });
     }
 
-    await browser.close();
-    const gif = generateGif();
-    if (gif) {
-        process.stdout.write(gif);
-    }
-})();
+    await context.close(); // Closes tabs and clears memory
 
-function generateGif() {
+    // FFmpeg Processing
     const palettePath = path.join(framesDir, 'palette.png');
-    const gifPath = path.join(framesDir, 'stacked.gif');
-    const firstFrame = path.join(framesDir, 'frame_000.png');
-    const filterChain = `mpdecimate=hi=2000:lo=1000:frac=0.1,scale=${gifWidth}:${gifHeight}:force_original_aspect_ratio=decrease,pad=${gifWidth}:${gifHeight}:(ow-iw)/2:(oh-ih)/2:color=black@0`;
+    const gifPath = path.join(framesDir, 'result.gif');
 
     try {
-        // Step 1: Palette
-        execSync(`"ffmpeg" -y -i "${firstFrame}" -vf "scale=${gifWidth}:${gifHeight}:force_original_aspect_ratio=decrease,pad=${gifWidth}:${gifHeight}:(ow-iw)/2:(oh-ih)/2:color=black@0,palettegen=max_colors=128" "${palettePath}"`);
+        // Generate Palette
+        execSync(`ffmpeg -y -i "${path.join(framesDir, 'frame_000.png')}" -vf "palettegen=max_colors=128" "${palettePath}"`);
+        // Generate Final GIF
+        execSync(`ffmpeg -y -framerate ${playbackFps} -i "${framesDir}/frame_%03d.png" -i "${palettePath}" -filter_complex "[0:v]paletteuse=dither=none" "${gifPath}"`);
 
-        // Step 2: Render GIF
-        execSync(`"ffmpeg" -y -framerate ${playbackFps} -i "${framesDir}/frame_%03d.png" -i "${palettePath}" -filter_complex "[0:v]${filterChain}[v];[v][1:v]paletteuse=dither=none:diff_mode=rectangle" -vsync vfr "${gifPath}"`);
-
-        // Read the file into a Buffer (Bytes)
-        const gifBuffer = fs.readFileSync(gifPath);
-
-        // Cleanup temporary files
-        if (fs.existsSync(framesDir)) fs.rmSync(framesDir, {recursive: true, force: true});
-
-        return gifBuffer;
-    } catch (err) {
-        console.error('Optimization Error:', err.message);
-        return null;
+        const buffer = fs.readFileSync(gifPath);
+        fs.rmSync(framesDir, { recursive: true, force: true });
+        return buffer;
+    } catch (e) {
+        fs.rmSync(framesDir, { recursive: true, force: true });
+        throw e;
     }
 }
+
+startService();
