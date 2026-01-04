@@ -1,9 +1,9 @@
 import asyncio
 
+from configs.config import ANIM_STEP
 from utils.modules.apng_module import get_apng_info, is_apng
 from utils.modules.gif_module import is_gif, get_gif_info
 from utils.modules.webp_module import is_webp, get_webp_info
-from utils.constants import ANIM_STEP
 
 
 async def process_trait(trait):

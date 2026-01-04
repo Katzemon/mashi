@@ -3,17 +3,9 @@ import base64
 
 import httpx
 
+from utils.helpers.mime_type_helper import get_mime_type
 from utils.helpers.traits_helper import get_traits_info
 from configs.config import MAX_GIF_GENERATIONS_AT_TIME, GIF_MAKER_SERVER_URI
-
-
-def get_mime_type(data: bytes) -> str:
-    # ... (Keep your existing get_mime_type code here) ...
-    if data.startswith(b'<svg') or data.startswith(b'<?xml'): return "image/svg+xml"
-    if data.startswith(b'RIFF') and data[8:12] == b'WEBP': return "image/webp"
-    if data.startswith(b'\x89PNG\r\n\x1a\n'): return "image/png"
-    if data.startswith(b'GIF87a') or data.startswith(b'GIF89a'): return "image/gif"
-    return "image/png"
 
 
 class GifService:
@@ -43,7 +35,7 @@ class GifService:
 
             payload = {
                 "images": images,
-                "max_t": max_t * length,  # 👈 pass timing info
+                "max_t": max_t * length,
             }
 
             async with httpx.AsyncClient(timeout=120.0) as client:

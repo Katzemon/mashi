@@ -30,6 +30,7 @@ def extract_first_webp_frame(webp_bytes: bytes) -> bytes:
         print(e)
         return b""
 
+
 def get_webp_info(image_bytes: bytes) -> float:
     """
     Improved detection of WebP frames and duration.

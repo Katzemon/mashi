@@ -6,9 +6,8 @@ from fastapi import FastAPI, Response, status, Request, HTTPException
 from starlette.responses import StreamingResponse
 
 from bot.bot import MashiBot
-from configs.config import DISCORD_TOKEN, NOTIFY_API_ROUTE, HTTPS_PORT
+from configs.config import DISCORD_TOKEN, HTTPS_PORT
 from data.repos.mashi_repo import MashiRepo
-from utils.io.test_data_io import save_test_mashi_data
 
 app = FastAPI()
 
@@ -30,20 +29,6 @@ async def release_notify(request: Request, response: Response):
         await asyncio.gather(*[MashiBot.instance().notify(data)])
         response.status_code = status.HTTP_200_OK
         return {"message": "Data received"}
-
-    except Exception as e:
-        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        return {"message": e}
-
-
-@app.post("/api/test_mashi")
-async def test_mashi(request: Request, response: Response):
-    try:
-        data = await request.json()
-        save_test_mashi_data(data)
-
-        response.status_code = status.HTTP_200_OK
-        return {"message": "Data saved"}
 
     except Exception as e:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -75,7 +60,5 @@ def start_https_server():
         host="0.0.0.0",
         port=HTTPS_PORT,
         log_level="info",
-        ssl_keyfile="/etc/letsencrypt/live/katzemon.com/privkey.pem",
-        ssl_certfile="/etc/letsencrypt/live/katzemon.com/fullchain.pem",
         access_log=True
     )

@@ -21,6 +21,7 @@ def extract_first_gif_frame(gif_bytes: bytes) -> bytes:
     except Exception as e:
         print(e)
 
+
 def get_gif_info(image_bytes) -> float:
     """
     Returns number of frames and total duration in seconds for a GIF.
