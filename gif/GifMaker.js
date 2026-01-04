@@ -1,8 +1,6 @@
 const puppeteer = require('puppeteer');
-const fs = require('fs');
 const path = require('path');
 const {execSync} = require('child_process');
-const crypto = require('crypto');
 const {
     captureFps,
     defaultGifWidth,
@@ -12,18 +10,20 @@ const {
     defaultTraitWidth,
     defaultTraitHeight
 } = require("../configs/Config");
+const {readFilesAsStrings} = require('../utils/io/Files')
 
 let browser = await puppeteer.launch({
     headless: "new",
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-frame-rate-limit', '--disable-gpu']
 });
 
-async function generateGif(imageUrls, maxT) {
+/**
+ * Returns the full path to a subdirectory inside the temp folder.
+ */
+async function generateGif(tempDir, maxT) {
     const totalFrames = Math.ceil(maxT * captureFps);
-
-    const uniqueId = crypto.randomUUID();
-    const framesDir = path.join(__dirname, `frames-${uniqueId}`);
-    if (!fs.existsSync(framesDir)) fs.mkdirSync(framesDir);
+    const imageUrls = await readFilesAsStrings(tempDir)
+    const resourcesDir = tempDir
 
     // Create an isolated incognito-like window
     const context = await browser.createBrowserContext();
@@ -64,7 +64,7 @@ async function generateGif(imageUrls, maxT) {
 
     // Capture Frames
     for (let i = 0; i < totalFrames; i++) {
-        const framePath = path.join(framesDir, `frame_${String(i).padStart(3, '0')}.png`);
+        const framePath = path.join(resourcesDir, `frame_${String(i).padStart(3, '0')}.png`);
         await page.screenshot({path: framePath, omitBackground: true});
         await client.send('Emulation.setVirtualTimePolicy', {
             policy: 'advance', budget: frameDelayMs
@@ -74,21 +74,18 @@ async function generateGif(imageUrls, maxT) {
     await context.close(); // Closes tabs and clears memory
 
     // FFmpeg Processing
-    const palettePath = path.join(framesDir, 'palette.png');
-    const gifPath = path.join(framesDir, 'result.gif');
+    const palettePath = path.join(resourcesDir, 'palette.png');
+    const gifPath = path.join(resourcesDir, 'result.gif');
 
     try {
         // Generate Palette
-        execSync(`ffmpeg -y -i "${path.join(framesDir, 'frame_000.png')}" -vf "palettegen=max_colors=256" "${palettePath}"`);
+        execSync(`ffmpeg -y -i "${path.join(resourcesDir, 'frame_000.png')}" -vf "palettegen=max_colors=256" "${palettePath}"`);
         // Generate Final GIF
-        execSync(`ffmpeg -y -framerate ${playbackFps} -i "${framesDir}/frame_%03d.png" -i "${palettePath}" -filter_complex "[0:v]paletteuse=dither=none" "${gifPath}"`);
+        execSync(`ffmpeg -y -framerate ${playbackFps} -i "${resourcesDir}/frame_%03d.png" -i "${palettePath}" -filter_complex "[0:v]paletteuse=dither=none" "${gifPath}"`);
 
-        const buffer = fs.readFileSync(gifPath);
-        fs.rmSync(framesDir, {recursive: true, force: true});
-        return buffer;
+        return gifPath
     } catch (e) {
-        fs.rmSync(framesDir, {recursive: true, force: true});
-        throw e;
+        throw e
     }
 }
 

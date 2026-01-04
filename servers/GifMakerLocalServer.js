@@ -1,6 +1,6 @@
 const http = require('http');
-const { PORT } = require('../configs/config');
-const { generateGif } = require('../gif/GifMaker');
+const {PORT} = require('../configs/config');
+const {generateGif} = require('../gif/GifMaker');
 
 
 async function startServer() {
@@ -10,10 +10,10 @@ async function startServer() {
             req.on('data', chunk => body += chunk);
             req.on('end', async () => {
                 try {
-                    const {images, max_t} = JSON.parse(body);
-                    const gifBuffer = await generateGif(images, max_t);
-                    res.writeHead(200, {'Content-Type': 'image/gif'});
-                    res.end(gifBuffer);
+                    const { tempDir, maxT} = JSON.parse(body);
+                    const gifPath = await generateGif(tempDir, maxT);
+                    res.writeHead(200, {'Content-Type': 'text/plain'});
+                    res.end(gifPath);
                 } catch (err) {
                     console.error("Internal Error:", err);
                     res.writeHead(500);
@@ -21,7 +21,8 @@ async function startServer() {
                 }
             });
         }
-    }).listen(PORT, () => {});
+    }).listen(PORT, () => {
+    });
 }
 
 module.exports = {

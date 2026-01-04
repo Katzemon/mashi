@@ -28,6 +28,7 @@ ALCHEMY_API_KEY = os.getenv("ALCHEMY_API_KEY")
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 #other:
+
 #gif
 MAX_GIF_GENERATIONS_AT_TIME = 4
 GIF_MAKER_SERVER_URI = "http://localhost:3000"
