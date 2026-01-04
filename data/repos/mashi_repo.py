@@ -5,11 +5,10 @@ from data.models.mashup_error import MashupError
 from data.remote.alchemy_api import AlchemyApi
 from data.remote.images_api import ImagesApi
 from data.remote.mashi_api import MashiApi
-from combiner.anim.gif_combiner import GifService
+from gif.gif_service import GifService
 from utils.combiner import get_combined_img_bytes
 from utils.helpers.mint_helper import generate_minted_svg
 from utils.modules.svg_module import replace_colors, is_svg
-from utils.io.test_data_io import get_test_mashi_data
 
 layer_order = [
     "background",
@@ -84,14 +83,11 @@ class MashiRepo:
 
         return nft_name
 
-    async def get_composite(self, wallet: str, mint: int | None = None, is_test=False,
+    async def get_composite(self, wallet: str, mint: int | None = None,
                             img_type: int = 0) -> str | MashupError:
         mashup = None
         try:
-            if is_test:
-                mashup = get_test_mashi_data()
-            else:
-                mashup = self._mashi_api.get_mashi_data(wallet)
+            mashup = self._mashi_api.get_mashi_data(wallet)
             assets = mashup.get("assets", [])
             colors = mashup.get("colors", {})
 
@@ -100,14 +96,11 @@ class MashiRepo:
 
             nft_name = None
             if mint:
-                if not is_test:
-                    check_res = self._check_mint_ownership(wallet, assets, mint)
-                    if type(check_res) is not str:
-                        return check_res
+                check_res = self._check_mint_ownership(wallet, assets, mint)
+                if type(check_res) is not str:
+                    return check_res
 
-                    nft_name = check_res
-                if is_test:
-                    nft_name = "For testing purpose"
+                nft_name = check_res
 
             # get assets in parallel
             tasks = [asyncio.to_thread(self._get_asset, asset, colors) for asset in assets]
@@ -128,12 +121,11 @@ class MashiRepo:
             if img_type == 0:
                 png_bytes = get_combined_img_bytes(
                     ordered_traits,
-                    is_minted=bool(mint),
                 )
             elif img_type == 1:
                 png_bytes = await GifService.get_instance().create_gif(ordered_traits)
             else:
-                png_bytes = await GifService.get_instance().create_gif(ordered_traits, length = 2)
+                png_bytes = await GifService.get_instance().create_gif(ordered_traits, length=2)
 
             if png_bytes:
                 return png_bytes

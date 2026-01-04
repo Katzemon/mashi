@@ -1,5 +1,6 @@
 import re
 
+
 def generate_minted_svg(nft_name: str) -> bytes:
     pattern = r"(.+)\s+by\s+(.+)"
     match = re.match(pattern, nft_name)

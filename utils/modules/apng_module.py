@@ -13,7 +13,8 @@ def is_apng(image_bytes):
         print(e)
         return False
 
-def get_apng_info(image_bytes) -> float:
+
+def get_apng_t(image_bytes) -> float:
     """
     Returns number of frames, total duration in seconds
     """

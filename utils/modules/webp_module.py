@@ -1,8 +1,6 @@
 import io
-from typing import Tuple
 
-import imageio
-from PIL import Image, ImageSequence
+from PIL import Image
 
 
 def is_webp(data: bytes) -> bool:
@@ -12,7 +10,7 @@ def is_webp(data: bytes) -> bool:
     return data.startswith(b"RIFF") and data[8:12] == b"WEBP"
 
 
-def extract_first_webp_frame(webp_bytes: bytes) -> bytes:
+def extract_first_webp_frame_as_png(webp_bytes: bytes) -> bytes:
     """
     Extracts the first frame of a (possibly animated) WebP
     and returns it as PNG bytes.
@@ -31,7 +29,7 @@ def extract_first_webp_frame(webp_bytes: bytes) -> bytes:
         return b""
 
 
-def get_webp_info(image_bytes: bytes) -> float:
+def get_webp_t(image_bytes: bytes) -> float:
     """
     Improved detection of WebP frames and duration.
     """

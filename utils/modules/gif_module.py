@@ -7,7 +7,7 @@ def is_gif(data) -> bool:
     return data.startswith(b"GIF87a") or data.startswith(b"GIF89a")
 
 
-def extract_first_gif_frame(gif_bytes: bytes) -> bytes:
+def extract_first_gif_frame_as_png(gif_bytes: bytes) -> bytes:
     try:
         with Image.open(io.BytesIO(gif_bytes)) as img:
             img.seek(0)  # first frame
@@ -20,9 +20,10 @@ def extract_first_gif_frame(gif_bytes: bytes) -> bytes:
             return output.getvalue()
     except Exception as e:
         print(e)
+        return b""
 
 
-def get_gif_info(image_bytes) -> float:
+def get_gif_t(image_bytes) -> float:
     """
     Returns number of frames and total duration in seconds for a GIF.
     """

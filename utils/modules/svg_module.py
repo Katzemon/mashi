@@ -47,7 +47,7 @@ def replace_colors(svg_bytes, body_color: str, eyes_color: str, hair_color: str)
     return svg_str.replace('\n', '').encode("utf-8")
 
 
-def svg_bytes_to_img(svg_bytes, target_size=None):
+def svg_bytes_to_png(svg_bytes, target_size=None):
     try:
         svg_bytes = remove_redundant_info(svg_bytes)
         png_bytes = cairosvg.svg2png(bytestring=svg_bytes)
