@@ -1,4 +1,3 @@
-const { startServer } = require('./servers/GifMakerLocalServer');
-const path = require("path");
+const {startServer} = require('./servers/GifMakerLocalServer');
 
 startServer();

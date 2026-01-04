@@ -10,7 +10,7 @@ async function startServer() {
             req.on('data', chunk => body += chunk);
             req.on('end', async () => {
                 try {
-                    const { tempDir, maxT} = JSON.parse(body);
+                    const {tempDir, maxT} = JSON.parse(body);
                     const gifPath = await generateGif(tempDir, maxT);
                     res.writeHead(200, {'Content-Type': 'text/plain'});
                     res.end(gifPath);

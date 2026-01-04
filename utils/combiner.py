@@ -1,7 +1,6 @@
-﻿import io
+﻿from PIL import Image
 
-from PIL import Image
-
+import io
 from configs.config import DEFAULT_PNG_WIDTH, DEFAULT_PNG_HEIGHT, DEFAULT_TRAIT_HEIGHT, DEFAULT_TRAIT_WIDTH
 from data.models.detailed_trait import DetailedTrait
 from utils.modules.gif_module import extract_first_gif_frame_as_png, is_gif

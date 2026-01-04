@@ -25,5 +25,6 @@ class HttpsRedirectMiddleware:
 http_app = FastAPI()
 http_app.add_middleware(HttpsRedirectMiddleware)
 
+
 def start_http_server():
     uvicorn.run(http_app, host="0.0.0.0", port=HTTP_PORT)

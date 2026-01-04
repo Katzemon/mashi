@@ -13,7 +13,6 @@ class AlchemyApi:
                 + (f"&pageKey={key}" if key else "")
         )
 
-
     def get_available_mints(self, wallet: str, background_uri: str) -> list:
         try:
             background_uri = background_uri.replace("https://ipfs.io/ipfs/", "ipfs://")
