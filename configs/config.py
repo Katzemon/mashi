@@ -1,14 +1,16 @@
 from dotenv import load_dotenv
 import os
 from firebase_admin import credentials
+from pathlib import Path
 
-from main import PROJECT_ROOT
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 load_dotenv()
 
 #server
 HTTP_PORT=80
 HTTPS_PORT=443
+
 
 #db
 CRED_PATH = PROJECT_ROOT / "firebase_cred.json"

@@ -3,7 +3,7 @@ const path = require('path');
 
 async function readFilesAsStrings(folderPath) {
     try {
-        const files = await fs.readdir(folderPath);
+        const files = await fs.readdir(String(folderPath));
 
         // Filter numeric filenames and sort
         const numericFiles = files

@@ -5,22 +5,23 @@ import uuid
 import httpx
 
 from configs.config import MAX_GIF_GENERATIONS_AT_TIME, GIF_MAKER_SERVER_URI
-from main import PROJECT_ROOT
+
 from utils.helpers.mime_type_helper import get_mime_type
 from utils.helpers.traits_helper import get_traits_info
 from utils.io.files import read_file, rm_dir, save_file
-
-TEMP_DIR = PROJECT_ROOT / "temp"
+from configs.config import PROJECT_ROOT
 
 
 class GifService:
     _instance = None
 
+
     def __init__(self):
         if GifService._instance is not None:
             raise Exception("This class is a singleton! Use GifService.get_instance()")
         self.semaphore = asyncio.Semaphore(MAX_GIF_GENERATIONS_AT_TIME)  # defines max GIF generations at time
-        TEMP_DIR.mkdir(exist_ok=True)
+        temp_dir = PROJECT_ROOT / "temp"
+        temp_dir.mkdir(exist_ok=True, parents=True)
 
     @classmethod
     def get_instance(cls):
@@ -30,12 +31,13 @@ class GifService:
 
     async def create_gif(self, traits_bytes: list, loops=1):
         gif_bytes = None
-        id_dir = TEMP_DIR / str(uuid.uuid4())
+        temp_dir = PROJECT_ROOT / "temp"
+        id_dir = temp_dir / str(uuid.uuid4())
         total_ts = await get_traits_info(traits_bytes)
         max_t = max(total_ts)
 
         async with self.semaphore:
-            id_dir.mkdir(exist_ok=True)
+            id_dir.mkdir(exist_ok=True, parents=True)
             for index, trait_bytes in enumerate(traits_bytes):
                 mime = get_mime_type(trait_bytes)
                 b64 = base64.b64encode(trait_bytes).decode("utf-8")
@@ -52,8 +54,7 @@ class GifService:
                 try:
                     response = await client.post(GIF_MAKER_SERVER_URI, json=payload)
                     if response.status_code == 200:
-                        gif_path_bytes = response.content
-                        gif_path: str = base64.b64encode(gif_path_bytes).decode("utf-8")
+                        gif_path = response.content
                         gif_bytes = read_file(gif_path)
                     else:
                         print(f"❌ Service Error: {response.status_code}")

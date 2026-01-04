@@ -1,5 +1,5 @@
 from configs.config import COLLECTION_NAME
-from data.firebase.firebase_db import get_db
+from data.firebase.firestore_db import get_db
 
 
 class MashersDao:

@@ -52,8 +52,8 @@ def get_combined_img_bytes(
                 size = bg_size
             else:
                 pos = (
-                    (DEFAULT_PNG_WIDTH - DEFAULT_TRAIT_WIDTH) / 2,
-                    (DEFAULT_PNG_HEIGHT - DEFAULT_TRAIT_HEIGHT) / 2
+                    int((DEFAULT_PNG_WIDTH - DEFAULT_TRAIT_WIDTH) / 2),
+                    int((DEFAULT_PNG_HEIGHT - DEFAULT_TRAIT_HEIGHT) / 2)
                 )
                 size = trait_size
 
