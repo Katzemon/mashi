@@ -1,51 +1,25 @@
 const puppeteer = require('puppeteer');
-const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const {execSync} = require('child_process');
 const crypto = require('crypto');
+const {
+    captureFps,
+    defaultGifWidth,
+    defaultGifHeight,
+    frameDelayMs,
+    playbackFps,
+    defaultTraitWidth,
+    defaultTraitHeight
+} = require("../configs/Config");
 
-const PORT = 3000;
-const gifWidth = 552;
-const gifHeight = 736;
-const frameDelayMs = 30;
-const captureFps = 33.33;
-const playbackFps = 30;
-
-let browser;
-
-async function startService() {
-    browser = await puppeteer.launch({
-        headless: "new",
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-frame-rate-limit', '--disable-gpu']
-    });
-
-    http.createServer(async (req, res) => {
-        if (req.method === 'POST') {
-            let body = '';
-            req.on('data', chunk => body += chunk);
-            req.on('end', async () => {
-                try {
-                    const {images, max_t} = JSON.parse(body);
-                    const gifBuffer = await generateGif(images, max_t);
-                    res.writeHead(200, {'Content-Type': 'image/gif'});
-                    res.end(gifBuffer);
-                } catch (err) {
-                    console.error("Internal Error:", err);
-                    res.writeHead(500);
-                    res.end(err.message);
-                }
-            });
-        }
-    }).listen(PORT, () => {
-        // Python listens for this specific string to know the service is ready
-        console.log("SERVICE_READY");
-    });
-}
+let browser = await puppeteer.launch({
+    headless: "new",
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-frame-rate-limit', '--disable-gpu']
+});
 
 async function generateGif(imageUrls, maxT) {
-    const durationSeconds = maxT;           // 👈 authoritative duration
-    const totalFrames = Math.ceil(durationSeconds * captureFps);
+    const totalFrames = Math.ceil(maxT * captureFps);
 
     const uniqueId = crypto.randomUUID();
     const framesDir = path.join(__dirname, `frames-${uniqueId}`);
@@ -54,7 +28,7 @@ async function generateGif(imageUrls, maxT) {
     // Create an isolated incognito-like window
     const context = await browser.createBrowserContext();
     const page = await context.newPage();
-    await page.setViewport({width: gifWidth, height: gifHeight});
+    await page.setViewport({width: defaultGifWidth, height: defaultGifHeight});
 
     const htmlContent = `
     <html>
@@ -71,10 +45,13 @@ async function generateGif(imageUrls, maxT) {
 
     // Image logic: Apply padding if aspect ratio isn't 3:4
     await page.evaluate(() => {
+        const xPadding = (defaultGifWidth - defaultTraitWidth) / 2
+        const yPadding = (defaultGifHeight - defaultTraitHeight) / 2
+
         document.querySelectorAll('img').forEach(img => {
             const ratio = img.naturalWidth / img.naturalHeight;
             if (Math.abs(ratio - 0.75) > 0.01) {
-                img.parentElement.style.padding = "68px 86px";
+                img.parentElement.style.padding = `${xPadding}px ${yPadding}px`;
             }
         });
     });
@@ -115,4 +92,6 @@ async function generateGif(imageUrls, maxT) {
     }
 }
 
-startService();
+module.exports = {
+    generateGif
+};

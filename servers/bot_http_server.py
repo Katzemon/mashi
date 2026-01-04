@@ -1,7 +1,10 @@
-﻿from fastapi import FastAPI
+﻿import uvicorn
+from fastapi import FastAPI
 from starlette.datastructures import URL
 from starlette.responses import RedirectResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
+
+from configs.config import HTTP_PORT
 
 
 class HttpsRedirectMiddleware:
@@ -21,3 +24,6 @@ class HttpsRedirectMiddleware:
 
 http_app = FastAPI()
 http_app.add_middleware(HttpsRedirectMiddleware)
+
+def start_http_server():
+    uvicorn.run(http_app, host="0.0.0.0", port=HTTP_PORT)

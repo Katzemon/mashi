@@ -1,13 +1,10 @@
 import asyncio
 import base64
-import os
 
 import httpx
 
-from utils.combiners.helpers.traits_helper import get_traits_info
-
-# 1. Initialize the Semaphore globally to limit concurrency to 2
-process_limit = asyncio.Semaphore(5)
+from utils.helpers.traits_helper import get_traits_info
+from configs.config import MAX_GIF_GENERATIONS_AT_TIME, GIF_MAKER_SERVER_URI
 
 
 def get_mime_type(data: bytes) -> str:
@@ -25,10 +22,7 @@ class GifService:
     def __init__(self):
         if GifService._instance is not None:
             raise Exception("This class is a singleton! Use GifService.get_instance()")
-        self.process = None
-        self.semaphore = asyncio.Semaphore(2)  # Limit concurrency to 2
-        self.endpoint = "http://localhost:3000"
-        self._is_ready = False
+        self.semaphore = asyncio.Semaphore(MAX_GIF_GENERATIONS_AT_TIME) #defines max GIF generations at time
 
     @classmethod
     def get_instance(cls):
@@ -36,34 +30,7 @@ class GifService:
             cls._instance = cls()
         return cls._instance
 
-    async def start(self):
-        """Spawns the Node.js sidecar process if not already running."""
-        if self._is_ready:
-            return
-
-        js_path = os.path.join(os.path.dirname(__file__), 'gif.js')
-
-        self.process = await asyncio.create_subprocess_exec(
-            'node', js_path,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-
-        # Wait for Node to signal that the browser is open
-        while True:
-            line = await self.process.stdout.readline()
-            if b'SERVICE_READY' in line:
-                self._is_ready = True
-                print("✅ Singleton GifService: Browser process started.")
-                break
-            if self.process.returncode is not None:
-                err = await self.process.stderr.read()
-                raise Exception(f"Failed to start Node service: {err.decode()}")
-
-    async def create_gif(self, trait_buffers: list, length = 1):
-        if not self._is_ready:
-            await self.start()
-
+    async def create_gif(self, trait_buffers: list, length=1):
         total_ts = await get_traits_info(trait_buffers)
         max_t = max(total_ts)
 
@@ -81,7 +48,7 @@ class GifService:
 
             async with httpx.AsyncClient(timeout=120.0) as client:
                 try:
-                    response = await client.post(self.endpoint, json=payload)
+                    response = await client.post(GIF_MAKER_SERVER_URI, json=payload)
                     if response.status_code == 200:
                         return response.content
                     print(f"❌ Service Error: {response.status_code}")

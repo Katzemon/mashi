@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 from bot.message_module import get_notify_embed
-from config.config import RELEASES_CHANNEL_ID, TEST_CHANNEL_ID, NEW_RELEASES_ROLE_ID
+from configs.config import RELEASES_CHANNEL_ID, TEST_CHANNEL_ID, NEW_RELEASES_ROLE_ID
 
 
 class MashiBot(commands.Bot):
@@ -15,15 +15,13 @@ class MashiBot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents)
         MashiBot._instance = self
 
-
     @classmethod
     def instance(cls):
         if cls._instance is None:
             cls._instance = MashiBot()
         return cls._instance
 
-
-    async def release_notify(self, data: dict):
+    async def notify(self, data: dict):
         try:
             if not data:
                 return
@@ -44,7 +42,6 @@ class MashiBot(commands.Bot):
             print(e)
             channel = self.instance().get_channel(TEST_CHANNEL_ID)
             await channel.send(f"Notify: {e} for {data}")
-
 
     async def setup_hook(self):
         await self.load_extension("bot.mashi_module")

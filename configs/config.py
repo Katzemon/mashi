@@ -3,6 +3,10 @@ import os
 
 load_dotenv()
 
+#server
+HTTP_PORT=80
+HTTPS_PORT=443
+
 #db
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
@@ -19,6 +23,10 @@ NEW_RELEASES_ROLE_ID = os.getenv("NEW_RELEASES_ROLE_ID")
 #routes
 NOTIFY_API_ROUTE = os.getenv("NOTIFY_API_ROUTE")
 
-#
+#apis
 ALCHEMY_API_KEY = os.getenv("ALCHEMY_API_KEY")
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+
+#other
+MAX_GIF_GENERATIONS_AT_TIME = 4
+GIF_MAKER_SERVER_URI = "http://localhost:3000"

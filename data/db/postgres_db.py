@@ -1,12 +1,12 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
-from config.config import DB_USER, DB_PASSWORD, DB_PORT, DB_NAME
+from configs.config import DB_USER, DB_PASSWORD, DB_PORT, DB_NAME
 
 
 class PostgresDb:
     _instance = None
 
-    #db config
+    #db configs
     def __init__(self):
         self.Base = declarative_base()
         self._database_url = (

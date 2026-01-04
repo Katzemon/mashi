@@ -1,39 +1,20 @@
 import asyncio
-
-import uvicorn
-
-from data.db import db
-from server.http_server import http_app
-from server.server import app
-
 from pathlib import Path
 
-from utils.combiners.anim.gif_combiner import GifService
+from data.db import db
+from gif.gif_service import GifService
+from servers.bot_http_server import start_http_server
+from servers.bot_server import start_https_server
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-
-def start_uvicorn():
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=443,
-        log_level="info",
-        ssl_keyfile="/etc/letsencrypt/live/katzemon.com/privkey.pem",
-        ssl_certfile="/etc/letsencrypt/live/katzemon.com/fullchain.pem",
-        access_log=True
-    )
-
-
-def start_uvicorn_80():
-    uvicorn.run(http_app, host="0.0.0.0", port=80)
 
 
 async def main():
     db.init()
     await GifService.get_instance().start()
 
-    server_task = asyncio.to_thread(start_uvicorn)
-    http_server_task = asyncio.to_thread(start_uvicorn_80)
+    server_task = asyncio.to_thread(start_https_server)
+    http_server_task = asyncio.to_thread(start_http_server)
 
     await asyncio.gather(server_task, http_server_task)
 

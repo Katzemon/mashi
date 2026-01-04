@@ -1,6 +1,6 @@
 ﻿import requests
 
-from config.config import ALCHEMY_API_KEY
+from configs.config import ALCHEMY_API_KEY
 
 
 class AlchemyApi:

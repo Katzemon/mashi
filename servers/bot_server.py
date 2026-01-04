@@ -1,12 +1,12 @@
 ﻿import asyncio
 from io import BytesIO
-from statistics import median
 
+import uvicorn
 from fastapi import FastAPI, Response, status, Request, HTTPException
 from starlette.responses import StreamingResponse
 
 from bot.bot import MashiBot
-from config.config import DISCORD_TOKEN, NOTIFY_API_ROUTE
+from configs.config import DISCORD_TOKEN, NOTIFY_API_ROUTE, HTTPS_PORT
 from data.repos.mashi_repo import MashiRepo
 from utils.io.test_data_io import save_test_mashi_data
 
@@ -19,7 +19,7 @@ async def startup():
     asyncio.create_task(bot.start(DISCORD_TOKEN))
 
 
-@app.post(NOTIFY_API_ROUTE)
+@app.post("/api/mashi/release_notify")
 async def release_notify(request: Request, response: Response):
     try:
         data = await request.json()
@@ -27,7 +27,7 @@ async def release_notify(request: Request, response: Response):
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"message": "Invalid request"}
 
-        await asyncio.gather(*[MashiBot.instance().release_notify(data)])
+        await asyncio.gather(*[MashiBot.instance().notify(data)])
         response.status_code = status.HTTP_200_OK
         return {"message": "Data received"}
 
@@ -67,3 +67,15 @@ async def get_mashup(wallet: str, is_static: bool = True):
     buffer = BytesIO(data)
     buffer.seek(0)
     return StreamingResponse(buffer, media_type=media_type)
+
+
+def start_https_server():
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=HTTPS_PORT,
+        log_level="info",
+        ssl_keyfile="/etc/letsencrypt/live/katzemon.com/privkey.pem",
+        ssl_certfile="/etc/letsencrypt/live/katzemon.com/fullchain.pem",
+        access_log=True
+    )

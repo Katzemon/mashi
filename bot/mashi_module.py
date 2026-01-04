@@ -5,7 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from config.config import TEST_CHANNEL_ID
+from configs.config import TEST_CHANNEL_ID
 from data.db.daos.mashers_dao import MashersDao
 from data.remote.mashi_api import MashiApi
 from data.repos.mashi_repo import MashiRepo
@@ -17,7 +17,6 @@ class MashiModule(commands.Cog):
         self._mashers_dao = MashersDao()
         _mashi_api = MashiApi()
         self._mashi_repo = MashiRepo.instance()
-
 
     @app_commands.command(name="connect_wallet", description="Connect wallet")
     @app_commands.describe(wallet="Wallet")
@@ -59,7 +58,6 @@ class MashiModule(commands.Cog):
                 ephemeral=True
             )
 
-
     @app_commands.command(name="disconnect_wallet", description="Disconnect wallet")
     async def disconnect_wallet(self, interaction: discord.Interaction):
         try:
@@ -75,7 +73,6 @@ class MashiModule(commands.Cog):
                 "Something went wrong",
                 ephemeral=True
             )
-
 
     @app_commands.command(name="mashi", description="Get mashup")
     @app_commands.describe(img_type="Static/Animated", mint="#Mint")
@@ -112,7 +109,6 @@ class MashiModule(commands.Cog):
                         )
                         return
 
-
                     buffer = BytesIO(data)
                     file = discord.File(fp=buffer, filename=f"composite{ext}")
 
@@ -135,71 +131,6 @@ class MashiModule(commands.Cog):
                 ephemeral=True
             )
 
-    @app_commands.command(name="for_testing_purpose", description="Get test mashup")
-    @app_commands.describe(img_type="Static/Animated")
-    @app_commands.choices(img_type=[
-        app_commands.Choice(name="Static", value=0),
-        app_commands.Choice(name="Shorter GIF", value=1),
-        app_commands.Choice(name="Longer GIF", value=2)
-    ])
-    async def for_testing_purpose(self, interaction: discord.Interaction, img_type: int = 0):
-        try:
-            if int(interaction.channel_id) != int(TEST_CHANNEL_ID):
-                await interaction.response.send_message(
-                    "For testing purposes only",
-                    ephemeral=True
-                )
-                return
-
-            await interaction.response.defer(ephemeral=False)
-
-            id = interaction.user.id
-            wallet = self._mashers_dao.get_wallet(id)
-            if wallet:
-                if img_type == 0:
-                    data = await self._mashi_repo.get_composite(wallet, mint=1, is_test=True)
-                    ext = ".png"
-                else:
-                    data = await self._mashi_repo.get_composite(wallet, img_type=img_type, mint=1, is_test=True)
-                    ext = ".gif"
-
-
-                if data:
-                    if type(data) is not bytes:
-                        msg = data.error_msg
-                        msg_data = data.data
-
-                        if msg_data:
-                            channel = await interaction.guild.fetch_channel(TEST_CHANNEL_ID)
-                            await channel.send(data)
-
-                        await interaction.followup.send(
-                            msg,
-                            ephemeral=True
-                        )
-                        return
-
-                    buffer = BytesIO(data)
-                    file = discord.File(fp=buffer, filename=f"composite{ext}")
-
-                    embed = discord.Embed(title=f"{interaction.user.display_name}'s Mashi", color=discord.Color.green())
-                    embed.set_image(url=f"attachment://composite{ext}")
-
-                    await interaction.followup.send(embed=embed, file=file, ephemeral=False)
-                    return
-
-            await interaction.followup.send(
-                f"/connect_wallet command",
-                ephemeral=True
-            )
-
-        except Exception as e:
-            channel = await interaction.guild.fetch_channel(TEST_CHANNEL_ID)
-            await channel.send(f"/mashi: {e}")
-            await interaction.followup.send(
-                "Something went wrong",
-                ephemeral=True
-            )
 
 async def setup(bot):
     await bot.add_cog(MashiModule(bot))
