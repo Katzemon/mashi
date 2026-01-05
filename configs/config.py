@@ -17,11 +17,6 @@ CRED_PATH = PROJECT_ROOT / "firebase_cred.json"
 FIREBASE_CRED = credentials.Certificate(CRED_PATH)
 COLLECTION_NAME = "discord-bot"
 
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_NAME = os.getenv("DB_NAME")
-DB_PORT = os.getenv("DB_PORT")
-
 #channels
 RELEASES_CHANNEL_ID = os.getenv("RELEASES_CHANNEL_ID")
 TEST_CHANNEL_ID = os.getenv("TEST_CHANNEL_ID")
