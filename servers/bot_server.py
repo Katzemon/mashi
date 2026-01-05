@@ -35,14 +35,15 @@ async def release_notify(request: Request, response: Response):
         return {"message": e}
 
 
-@app.get("/api/get_mashup/{wallet}")
-async def get_mashup(wallet: str, is_static: bool = True):
-    if is_static:
-        img_type = 0
+@app.get("/api/mashi/mashup/{wallet}")
+async def get_mashup(wallet: str, img_type: int = 0):
+    if img_type == 0:
         media_type = "image/png"
     else:
-        img_type = 1
         media_type = "image/gif"
+
+    if img_type not in range(0, 3):
+        raise HTTPException(status_code=404, detail="Wrong image type")
 
     data = await MashiRepo.instance().get_composite(wallet, img_type=img_type)
 
