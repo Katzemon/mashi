@@ -31,8 +31,8 @@ class AlchemyApi:
 
                 #
                 nft_names = [
-                    nft["name"]
-                    for nft in data["ownedNfts"]
+                    metadata["name"]
+                    for metadata in nft.get("raw", {}).get("metadata", {})
                     if any(
                         asset.get("label") == "background" and asset.get("uri") == background_uri
                         for asset in nft.get("raw", {}).get("metadata", {}).get("assets", [])
