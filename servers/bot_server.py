@@ -6,7 +6,7 @@ from fastapi import FastAPI, Response, status, Request, HTTPException
 from starlette.responses import StreamingResponse
 
 from bot.bot import MashiBot
-from configs.config import DISCORD_TOKEN, HTTPS_PORT
+from configs.config import DISCORD_TOKEN, HTTP_PORT
 from data.repos.mashi_repo import MashiRepo
 
 app = FastAPI()
@@ -59,7 +59,7 @@ def start_https_server():
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=HTTPS_PORT,
+        port=HTTP_PORT,
         log_level="info",
         access_log=True
     )

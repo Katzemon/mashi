@@ -9,7 +9,6 @@ load_dotenv()
 
 #server
 HTTP_PORT=80
-HTTPS_PORT=443
 GIF_LOCAL_SERVER_PORT = 3000
 
 #db
