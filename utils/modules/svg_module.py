@@ -56,6 +56,8 @@ def svg_bytes_to_png(svg_bytes, target_size=None):
         if target_size:
             img = img.resize(target_size, resample=resample_mode)
 
-        return img
+        output = io.BytesIO()
+        img.save(output, format="PNG")
+        return output.getvalue()
     except Exception as e:
         print(e)
