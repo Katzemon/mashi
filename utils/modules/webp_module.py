@@ -1,6 +1,7 @@
 import io
 
 from PIL import Image
+import webp
 
 
 def is_webp(data: bytes) -> bool:
@@ -31,22 +32,23 @@ def extract_first_webp_frame_as_png(webp_bytes: bytes) -> bytes:
 
 def get_webp_t(image_bytes: bytes) -> float:
     """
-    Improved detection of WebP frames and duration.
+    Calculates the total duration of a WebP animation from raw bytes
+    using the libwebp wrapper.
     """
-    with Image.open(io.BytesIO(image_bytes)) as im:
-        num_frames = getattr(im, "n_frames", 1)
-        total_duration_ms = 0
+    try:
+        # Load raw bytes into the WebP data structure
+        webp_data = webp.WebPData.from_buffer(image_bytes)
 
-        for i in range(num_frames):
-            im.seek(i)
-            # WebP duration is in milliseconds.
-            # If 'duration' is missing, it defaults to 0,
-            # but standard players usually treat < 10ms as 100ms.
-            d = im.info.get("duration", 0)
+        # Initialize the decoder
+        dec = webp.WebPAnimDecoder.new(webp_data)
 
-            if d == 0 and num_frames > 1:
-                d = 100  # Default fallback for animations
+        total_ms = 0
+        # Iterate through frames; 'arr' is the image data,
+        # 'timestamp_ms' is the cumulative time at the end of that frame.
+        for arr, timestamp_ms in dec.frames():
+            total_ms = timestamp_ms
 
-            total_duration_ms += d
-
-    return total_duration_ms / 1000.0
+        return total_ms / 1000.0
+    except Exception as e:
+        print(f"Error decoding WebP: {e}")
+        return 0.0

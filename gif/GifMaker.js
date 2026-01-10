@@ -28,7 +28,9 @@ startBrowser()
  * Returns the full path to a subdirectory inside the temp folder.
  */
 async function generateGif(tempDir, maxT) {
+    console.log(maxT)
     const totalFrames = Math.ceil(maxT * captureFps);
+    console.log(totalFrames)
     const imageUrls = await readFilesAsStrings(tempDir)
     const resourcesDir = tempDir
 
@@ -68,12 +70,11 @@ async function generateGif(tempDir, maxT) {
 
     const client = await page.target().createCDPSession();
     await client.send('Emulation.setVirtualTimePolicy', {
-        policy: 'advance',
-        budget: Number(totalFrames * frameDelayMs)
+        policy: 'pause',
     });
 
     // Capture Frames
-    for (let i = 0; i < totalFrames; i++) {
+    for (let i = 0; i <= totalFrames; i++) {
         const framePath = path.join(resourcesDir, `frame_${String(i).padStart(3, '0')}.png`);
         await page.screenshot({path: framePath, omitBackground: true});
         await client.send('Emulation.setVirtualTimePolicy', {

@@ -35,6 +35,7 @@ class GifService:
         id_dir = temp_dir / str(uuid.uuid4())
         total_ts = await get_traits_info(traits_bytes)
         max_t = max(total_ts)
+        print(max_t)
 
         async with self.semaphore:
             id_dir.mkdir(exist_ok=True, parents=True)

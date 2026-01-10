@@ -7,16 +7,14 @@ from utils.modules.webp_module import is_webp, get_webp_t
 
 
 async def process_trait(trait):
-    if is_apng(trait):
-        total_duration = await asyncio.to_thread(get_apng_t, trait)
-        return total_duration
-
-    elif is_gif(trait):
+    if is_gif(trait):
         total_duration = await asyncio.to_thread(get_gif_t, trait)
         return total_duration
-
     elif is_webp(trait):
         total_duration = await asyncio.to_thread(get_webp_t, trait)
+        return total_duration
+    elif is_apng(trait):
+        total_duration = await asyncio.to_thread(get_apng_t, trait)
         return total_duration
     else:
         return ANIM_STEP
