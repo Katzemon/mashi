@@ -59,7 +59,7 @@ async function generateGif(tempDir, maxT) {
             const yPadding = (defaultGifHeight - defaultTraitHeight) / 2;
 
             document.querySelectorAll('img').forEach(img => {
-                const ratio = img.naturalWidth / img.naturalHeight;
+                const ratio = Math.round((img.naturalWidth / img.naturalHeight) * 100) / 100;
                 if (Math.abs(ratio - 0.75) > 0.01) {
                     img.parentElement.style.padding = `${xPadding}px ${yPadding}px`;
                 }
