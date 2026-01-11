@@ -26,7 +26,7 @@ def convert_to_detailed_traits(traits: list[bytes]) -> list[DetailedTrait]:
         if i == 0 or i == len(traits) - 1:
             image = Image.open(io.BytesIO(temp_png_bytes))
             width, height = image.size
-            is_full_size = DEFAULT_PNG_WIDTH / DEFAULT_PNG_HEIGHT == width / height
+            is_full_size = DEFAULT_PNG_WIDTH / DEFAULT_PNG_HEIGHT == round(width / height, 2)
 
         detailed_traits.append(DetailedTrait(src=temp_png_bytes, is_full_size=is_full_size))
 
